@@ -1,0 +1,9 @@
+This directory should contain tree implementations for the project.
+
+The following implementations should be present in the directory:
+
+	- AVL Tree
+	- Red-Black Tree
+	- Splay Tree
+	
+	- Contention Adapting Tree
