@@ -17,9 +17,14 @@
 
 using namespace std;
 
-void tree_insert(AVLTree * tree, const int & key) {
+bool tree_insert(AVLTree * tree, const int & key) {
     cout << "Inserting " << key << "..." << endl;
-    tree->insert(key);
+    return tree->insert(key);
+}
+
+bool tree_delete(AVLTree * tree, const int & key) {
+    cout << "Deleting " << key << "..." << endl;
+    return tree->erase(key);
 }
 
 /*
@@ -28,17 +33,31 @@ void tree_insert(AVLTree * tree, const int & key) {
 int main(int argc, char** argv) {
     AVLTree * tree = new AVLTree();
     
-    tree_insert(tree, 4);
-    tree_insert(tree, 5);
-    tree_insert(tree, 6);
-    tree_insert(tree, 1);
-    tree_insert(tree, 3);
-    tree_insert(tree, 2);
+    assert( tree_insert(tree, 4) ) ;
+    assert( tree_insert(tree, 5) );
+    assert( tree_insert(tree, 6) );
+    assert( tree_insert(tree, 1) );
+    assert( tree_insert(tree, 3) );
+    assert( tree_insert(tree, 2) );
+    tree->printInOrderTraversal();
+    tree->printBFSOrder();
+    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
+    assert( !tree_insert(tree, 2) );
     tree->printInOrderTraversal();
     tree->printBFSOrder();
     
+    assert( tree_delete(tree, 3) );
+    tree->printInOrderTraversal();
+    tree->printBFSOrder();
+    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
+    assert( !tree_delete(tree, 3) );
+    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    
+    assert( tree_delete(tree, 2));
+    tree->printInOrderTraversal();
+    tree->printBFSOrder();
     
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     

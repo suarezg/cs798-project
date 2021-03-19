@@ -15,9 +15,7 @@
 #define AVL_TREE_H
 
 #include <algorithm>    /* for max */
-#include <iostream>
-#include <iomanip>
-#include <queue> 
+#include <queue>        /* used in BFS */
 #include "util.h"
 
 /* Sequential AVL Tree */
@@ -46,12 +44,19 @@ private:
     };
     
     Node * root;
-    int get_height(Node * node);
-    void update_height(Node * node);
-    Node * search(const int & key);
+    
+    int getHeight(Node * node);
+    void updateHeight(Node * node);
     void rebalance(Node * node);
-    void left_rotate(Node * node);
-    void right_rotate(Node * node);
+    void leftRotate(Node * node);
+    void rightRotate(Node * node);
+    Node * search(const int & key);
+    Node * successor(Node * node);
+    Node * predecessor(Node * node);
+    Node * get_min(Node * node);
+    Node * get_max(Node * node);
+    void unlink(Node * node);
+    
     void printInOrderTraversal(Node * node);
     bool doesAVLHold(Node * node);
 public:
@@ -67,41 +72,41 @@ public:
     
 };
 
-int AVLTree::get_height(Node* node) {
+int AVLTree::getHeight(Node* node) {
     if (node == NULL)
         return -1;
     else
         return node->height;
 }
 
-void AVLTree::update_height(Node * node) {
-    node->height = max(get_height(node->left), get_height(node->right)) + 1;
+void AVLTree::updateHeight(Node * node) {
+    node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
 }
 
 void AVLTree::rebalance(Node * node) {
     while (node != NULL) {
-        update_height(node);
-        if ( get_height(node->left) >= (2 + get_height(node->right)) ) {
-            if ( get_height(node->left->left) >= get_height(node->left->right) )
-                right_rotate(node);
+        updateHeight(node);
+        if ( getHeight(node->left) >= (2 + getHeight(node->right)) ) {
+            if ( getHeight(node->left->left) >= getHeight(node->left->right) )
+                rightRotate(node);
             else {
-                left_rotate(node->left);
-                right_rotate(node);
+                leftRotate(node->left);
+                rightRotate(node);
             }
         }
-        else if ( get_height(node->right) >= (2 + get_height(node->left)) )  {
-            if ( get_height(node->right->right) >= get_height(node->right->left) )
-                left_rotate(node);
+        else if ( getHeight(node->right) >= (2 + getHeight(node->left)) )  {
+            if ( getHeight(node->right->right) >= getHeight(node->right->left) )
+                leftRotate(node);
             else {
-                right_rotate(node->right);
-                left_rotate(node);
+                rightRotate(node->right);
+                leftRotate(node);
             }
         }
         node = node->parent; 
     }
 }
 
-void AVLTree::left_rotate(Node * x) {
+void AVLTree::leftRotate(Node * x) {
     Node * y = x->right;
     y->parent = x->parent;
     if (y->parent == NULL) 
@@ -117,12 +122,12 @@ void AVLTree::left_rotate(Node * x) {
         x->right->parent = x;
     y->left = x;
     x->parent = y;
-    update_height(x);
-    update_height(y);
+    updateHeight(x);
+    updateHeight(y);
     
 }
 
-void AVLTree::right_rotate(Node * x) {
+void AVLTree::rightRotate(Node * x) {
     Node * y = x->left;
     y->parent = x->parent;
     if (y->parent == NULL)
@@ -138,10 +143,64 @@ void AVLTree::right_rotate(Node * x) {
         x->left->parent = x;
     y->right = x;
     x->parent = y;
-    update_height(x);
-    update_height(y);
+    updateHeight(x);
+    updateHeight(y);
     
     
+}
+
+AVLTree::Node * AVLTree::successor(Node * node) {
+    Node * succ = NULL;
+    if (node->right != NULL) {
+        succ = get_min(node->right);
+    }
+    else {
+        /* Node does not have a right child, look up the tree for successor */
+        Node * curr = node;
+        while ( (curr->parent != NULL) && (curr->parent->right == curr) ) {
+            /* Walk up the tree until we reach a node that is the left child of the parent */
+            curr = curr->parent;
+        }
+        succ = curr->parent;
+    }
+    return succ;
+}
+
+AVLTree::Node * AVLTree::predecessor(Node * node) {
+    Node * pred = NULL;
+    if (node->left != NULL) {
+        pred = get_max(node->left);
+    }
+    else {
+        /* Node odes not have a left child, look up the tree for predecessor */
+        Node * curr = node;
+        while ( (curr->parent != NULL) && (curr->parent->left == curr) ) {
+            /* Walk up the tree until we reach a node that is the right child of the parent */
+            curr = curr->parent;
+        }
+        
+        pred = curr->parent;    
+    }
+    return pred;
+}
+
+/**
+ * returns the node containing the minimum of the tree rooted at @p node
+ */
+AVLTree::Node * AVLTree::get_min(Node * node) {
+    Node * curr = node;
+    while ( curr->left != NULL ) {
+        curr = curr->left;
+    }
+    return curr;
+}
+
+AVLTree::Node * AVLTree::get_max(Node * node) {
+    Node * curr = node;
+    while ( curr->right != NULL) {
+        curr = curr->right;
+    }
+    return curr;
 }
 
 AVLTree::AVLTree() {
@@ -202,6 +261,43 @@ bool AVLTree::insert(const int & key) {
     return true;
 }
 
+void AVLTree::unlink(Node * node) {
+    assert( (node->left == NULL) || (node->right == NULL) );
+    Node * child = node->left != NULL? node->left : node->right;
+    
+    /* NULL node's child pointers */
+    if (node->left != NULL)
+        node->left = NULL;
+    else
+        node->right = NULL;
+
+    if ( node == root  ) {
+        assert(node->parent == NULL);
+        root = child;
+        if ( child != NULL )
+            child->parent = NULL;
+    }
+    else {
+        Node * parent = node->parent;
+        node->parent = NULL;  //NULL node's parent pointer
+        
+        if ( parent->left == node ) {
+            /* node was right child of parent */
+            parent->left = child;
+            if ( child != NULL )
+                child->parent = parent;
+        }
+        else {
+            /* node was right child of parent */
+            parent->right = child;
+            if ( child != NULL )
+                child->parent = parent;
+        }
+        
+    }
+     
+}
+
 bool AVLTree::erase(const int & key) {
     Node * node = search(key);
     
@@ -209,7 +305,30 @@ bool AVLTree::erase(const int & key) {
         return false;
     
     /* Key is in tree, delete it */
+    Node * origParent = node->parent;
     
+    if ( (node->left== NULL) || (node->right == NULL) ) {
+        /* Node does NOT have two children */
+        unlink(node);
+        delete(node);
+    }
+    else {
+        Node * pred = predecessor(node);
+        
+        /* swap keys */
+        int temp = node->key;
+        node->key = pred->key;
+        pred->key = temp;
+        
+        /* pred contains key, and should be easier to delete */
+        unlink(pred);
+        delete(pred);
+    }
+    
+    if (origParent == NULL )
+        rebalance(root);
+    else
+        rebalance(origParent); 
     return true;
 }
 
@@ -238,7 +357,7 @@ bool AVLTree::doesAVLHold(Node * node) {
     if (node->right != NULL)
         holds *= doesAVLHold(node->right);    
    
-    holds *= abs(get_height(node->left) - get_height(node->right)) <= 1 ? true : false;
+    holds *= abs(getHeight(node->left) - getHeight(node->right)) <= 1 ? true : false;
     
     return holds; 
     
