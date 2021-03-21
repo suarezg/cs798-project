@@ -13,7 +13,11 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
+#include <set>
+#include <thread>         // std::this_thread::sleep_for
 #include "../src/trees/avl_tree.h"
+#include "../src/util.h"
 
 using namespace std;
 
@@ -27,10 +31,7 @@ bool tree_delete(AVLTree * tree, const int & key) {
     return tree->erase(key);
 }
 
-/*
- * 
- */
-int main(int argc, char** argv) {
+void simple_test() {
     AVLTree * tree = new AVLTree();
     
     assert( tree_insert(tree, 4) ) ;
@@ -60,6 +61,71 @@ int main(int argc, char** argv) {
     tree->printBFSOrder();
     
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    
+}
+
+void timed_test(int millis) {
+    set<int> numbers;
+    AVLTree * tree = new AVLTree();
+    PaddedRandom * rng = new PaddedRandom();
+    
+    
+    const int KEYRANGE = 10000;
+    
+    /* PREFILL */
+    for (int i = 0; i < KEYRANGE / 2; i++) {
+        int num = rng->nextNatural() % 10000;
+        tree->insert(num);
+        numbers.insert(num);
+        assert( tree->checkAVL() );
+    }
+    
+    
+    /* TEST */
+    
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    uint64_t numOps = 0;
+    while ( ( (int) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count()) < millis ) {
+        int num = rng->nextNatural() % KEYRANGE;
+        if (rng->nextNatural() % 2 == 0) {
+            bool op = tree->insert(num);
+            bool expected;
+            if ( numbers.count(num) == 0 )
+                expected = true; //num is currently not in numbers
+            else
+                expected = false;
+            assert(op == expected);
+            if (op == true)
+                numbers.insert(num);
+            
+        }
+        else {
+            bool op = tree->erase(num);
+            bool expected;
+            if ( numbers.count(num) != 0 )
+                expected = true;
+            else
+                expected = false;
+            assert(op == expected);
+            if (op == true)
+                numbers.erase(num);
+        }
+        numOps++;
+        assert(tree->checkAVL());
+            
+    }
+    cout << "Number of operations: " << numOps << endl;
+    cout << "Timed test complete." << endl;
+    
+}
+
+/*
+ * 
+ */
+int main(int argc, char** argv) {
+    
+    simple_test( );
+    timed_test( 30000 );
     
     return 0;
 }

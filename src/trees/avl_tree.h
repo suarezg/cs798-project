@@ -59,6 +59,7 @@ private:
     
     void printInOrderTraversal(Node * node);
     bool doesAVLHold(Node * node);
+    void freeTraversal(Node * node);
 public:
     AVLTree();
     ~AVLTree();
@@ -205,6 +206,22 @@ AVLTree::Node * AVLTree::get_max(Node * node) {
 
 AVLTree::AVLTree() {
     root = NULL;
+}
+
+void AVLTree::freeTraversal(Node * node) {
+    assert(node != NULL);
+    if ( node->left != NULL )
+        freeTraversal(node->left);
+    
+    if ( node->right != NULL)
+        freeTraversal(node->right);
+    
+    delete(node);
+}
+
+AVLTree::~AVLTree() {
+    if (root != NULL)
+        freeTraversal(root);
 }
 
 AVLTree::Node * AVLTree::search(const int & key) {
