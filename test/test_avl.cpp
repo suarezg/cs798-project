@@ -16,8 +16,12 @@
 #include <chrono>
 #include <set>
 #include <thread>         // std::this_thread::sleep_for
+#include <string>
+#include <cstring>
 #include "../src/trees/avl_tree.h"
-#include "../src/util.h"
+#include "../src/util.h"\
+
+#define RANDOM_SEED         5
 
 using namespace std;
 
@@ -65,18 +69,26 @@ void simple_test() {
 }
 
 void timed_test(int millis) {
+    
+    cout << "Timed test duration: " << millis << " ms." << endl;
     set<int> numbers;
     AVLTree * tree = new AVLTree();
     PaddedRandom * rng = new PaddedRandom();
-    
+    rng->setSeed(RANDOM_SEED);
+    int checksum = 0;
+    int insertOps = 0;
+    int deleteOps = 0;
     
     const int KEYRANGE = 10000;
     
     /* PREFILL */
     for (int i = 0; i < KEYRANGE / 2; i++) {
         int num = rng->nextNatural() % 10000;
-        tree->insert(num);
-        numbers.insert(num);
+        if ( numbers.count(num) == 0 ) {
+            tree->insert(num);
+            numbers.insert(num);
+            checksum += num;
+        }
         assert( tree->checkAVL() );
     }
     
@@ -87,34 +99,57 @@ void timed_test(int millis) {
     uint64_t numOps = 0;
     while ( ( (int) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count()) < millis ) {
         int num = rng->nextNatural() % KEYRANGE;
-        if (rng->nextNatural() % 2 == 0) {
+        if ( rng->nextNatural() % 2 == 0) {
             bool op = tree->insert(num);
             bool expected;
+            
+            /* Check if we've insert num before */
             if ( numbers.count(num) == 0 )
                 expected = true; //num is currently not in numbers
             else
                 expected = false;
             assert(op == expected);
-            if (op == true)
+            if (op == true)  {
+                // inserted num into set 
                 numbers.insert(num);
+                checksum += num;
+            }
+                
+            insertOps++;
             
         }
         else {
             bool op = tree->erase(num);
             bool expected;
+            
+            /* Check if we've insert num before */
             if ( numbers.count(num) != 0 )
                 expected = true;
             else
                 expected = false;
+            
             assert(op == expected);
-            if (op == true)
+            
+            if (op == true) {
+                // deleted num from set
                 numbers.erase(num);
+                checksum -= num;
+            }
+            deleteOps++;
         }
         numOps++;
-        assert(tree->checkAVL());
+        //assert(tree->checkAVL());
             
     }
+    
+    
+    int avlSum = tree->sumOfKeys();
+    string status = avlSum == checksum ? ".OK." : ".ERROR.";
+    
+    cout << "AVL Sum: " << avlSum << ". Checksum: " << checksum << status << endl;
     cout << "Number of operations: " << numOps << endl;
+    cout << "Insert operations: " << insertOps << endl;
+    cout << "Delete operations: " << deleteOps << endl;
     cout << "Timed test complete." << endl;
     
 }
@@ -124,8 +159,29 @@ void timed_test(int millis) {
  */
 int main(int argc, char** argv) {
     
+    if (argc == 1) {
+        cout<<"USAGE: "<<argv[0]<<" [options]"<<endl;
+        cout<<"Options:"<<endl;
+        cout<<"    -t [int]     milliseconds to run"<<endl;
+        cout<<endl;
+        return 1;
+    }
+    int millisToRun = 0;
+    
+    // read command line args
+    for (int i=1;i<argc;++i) {
+        if (strcmp(argv[i], "-t") == 0) {
+            millisToRun = atoi(argv[++i]);            
+        } else {
+            cout<<"bad arguments"<<endl;
+            exit(1);
+        }
+    }
+    
     simple_test( );
-    timed_test( 30000 );
+    timed_test( millisToRun );
+    
+    
     
     return 0;
 }

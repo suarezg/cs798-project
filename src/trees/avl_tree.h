@@ -60,18 +60,22 @@ private:
     void printInOrderTraversal(Node * node);
     bool doesAVLHold(Node * node);
     void freeTraversal(Node * node);
+    int sumKeys(Node * node);
 public:
     AVLTree();
     ~AVLTree();
     virtual bool contains(const int & key);
     virtual bool insert(const int & key);
     virtual bool erase(const int & key);
+    int sumOfKeys();
     //virtual void traversal(const int & key);
     void printInOrderTraversal();
     void printBFSOrder();
     bool checkAVL( );
     
 };
+
+
 
 int AVLTree::getHeight(Node* node) {
     if (node == NULL)
@@ -347,6 +351,16 @@ bool AVLTree::erase(const int & key) {
     else
         rebalance(origParent); 
     return true;
+}
+
+int AVLTree::sumKeys(Node * node) {
+    if (node == NULL)
+        return 0;
+    return node->key + sumKeys(node->left) + sumKeys(node->right);
+}
+
+int AVLTree::sumOfKeys() {
+    return sumKeys(root);
 }
 
 
