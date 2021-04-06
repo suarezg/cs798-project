@@ -63,13 +63,26 @@ private:
     void freeTraversal(Node * node);
     int sumKeys(Node * node);
     void printBFSOrder(Node * node);
+    
+    
 public:
+    struct SplitRecord {
+        AVLTree * leftTree;
+        AVLTree * rightTree;
+        int splitKey;
+        
+        SplitRecord() {
+            
+        }
+    };
+    
     AVLTree();
     ~AVLTree();
     virtual bool contains(const int & key);
     virtual bool insert(const int & key);
     virtual bool erase(const int & key);
-    virtual AVLTree * join(AVLTree * rightTree);
+    static AVLTree * join(AVLTree * leftTree, AVLTree * rightTree);
+    static SplitRecord * split(AVLTree * tree);
     int sumOfKeys();
     int maxKey();
     int minKey();
@@ -379,15 +392,11 @@ bool AVLTree::erase(const int & key) {
 }
 
 
-AVLTree * AVLTree::join(AVLTree * rightTree) {
+AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
     /* Assumption: rightTree's smallest key > this tree's largest key */
     AVLTree * joinedTree = new AVLTree();
-    AVLTree * leftTree = this;
-   
-    int leftHeight = leftTree->root->height;
-    int rightHeight = rightTree->root->height;
     
-    /* Check if left (this) tree has keys */
+    /* Check if left tree has keys */
     if(leftTree->root == NULL){
         joinedTree->root = rightTree->root;
         return joinedTree;
@@ -400,6 +409,9 @@ AVLTree * AVLTree::join(AVLTree * rightTree) {
     }
     
     /* Both trees are non-empty, non-trivial join */
+    int leftHeight = leftTree->root->height;
+    int rightHeight = rightTree->root->height;
+    
     if ( leftHeight >= rightHeight ) {
         int minKey = rightTree->minKey();
         rightTree->erase(minKey);
@@ -428,7 +440,7 @@ AVLTree * AVLTree::join(AVLTree * rightTree) {
             rightTree->root->parent = newNode;
         }
         
-        updateHeight(newNode);
+        joinedTree->updateHeight(newNode);
         
         if ( u == NULL ) {
             joinedTree->root = newNode;
@@ -474,7 +486,7 @@ AVLTree * AVLTree::join(AVLTree * rightTree) {
         if (leftTree->root != NULL) {
             leftTree->root->parent = newNode;
         }   
-        updateHeight(newNode);
+        joinedTree->updateHeight(newNode);
         
         if ( u == NULL ) {
             joinedTree->root = newNode;
@@ -492,6 +504,63 @@ AVLTree * AVLTree::join(AVLTree * rightTree) {
         joinedTree->rebalance(u);
     }
     return joinedTree;
+}
+
+AVLTree::SplitRecord * AVLTree::split(AVLTree * tree) {
+    SplitRecord * sRecord = new SplitRecord();
+    Node * leftRoot = NULL;
+    Node * rightRoot = NULL;
+    
+    if (tree->root == NULL) {
+        /* empty tree */
+        delete(sRecord);
+        return NULL;
+    }
+    else if (tree->root->left == NULL && tree->root->right == NULL) {
+        /* Tree only has one node */
+        delete(sRecord);
+        return NULL;
+    }
+    else if (tree->root->left == NULL) {
+        /* root's left child is NULL, right child is non-NULL */
+        sRecord->splitKey = tree->root->right->key;
+        rightRoot = tree->root->right;
+        rightRoot->parent = NULL;
+        tree->root->right = NULL;
+        leftRoot = tree->root;
+    }
+    else {
+        /* root's left child is non-NULL */
+        sRecord->splitKey = tree->root->key;
+        leftRoot = tree->root->left;
+        leftRoot->parent = NULL;
+        tree->root->left = NULL;
+       
+        if (tree->root->right == NULL) {
+            /* root does not have a right child */
+            rightRoot = tree->root;
+        }
+        else {
+            /* re-insert splitKey into left tree */
+            Node * oldRoot = tree->root;
+            tree->root = tree->root->right;
+            tree->root->parent = NULL;   
+            delete(oldRoot);
+            tree->insert(sRecord->splitKey);
+            rightRoot = tree->root;
+            
+        }
+    }
+    AVLTree * leftTree = new AVLTree();
+    leftTree->root = leftRoot;
+    AVLTree * rightTree = new AVLTree();
+    rightTree->root = rightRoot;
+     
+    /* TODO Update heights? */
+    sRecord->rightTree = rightTree;
+    sRecord->leftTree = leftTree;
+    
+    return sRecord;
 }
 
 int AVLTree::sumKeys(Node * node) {

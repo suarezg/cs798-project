@@ -63,7 +63,6 @@ void simple_test() {
     assert( tree_delete(tree, 2));
     //tree->printInOrderTraversal();
     tree->printBFSOrder();
-    
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
 }
@@ -164,24 +163,46 @@ void split_join_test() {
     for (int i = 1; i <= MIDPOINT; i++)
         leftTree->insert(i);
     
+    cout << "[Left Tree]";
     leftTree->printBFSOrder();
     
     for (int i = MIDPOINT + 1; i <= MIDPOINT + 3 ; i++) 
        rightTree->insert(i);
-
+    
+    cout << "[Right Tree]";
     rightTree->printBFSOrder();
     
     int leftTreeSum = leftTree->sumOfKeys();
     int rightTreeSum = rightTree->sumOfKeys();
     
-    
-    AVLTree * joinedTree = leftTree->join(rightTree);
+    cout << "JOIN TREES\n==========" << endl;
+    AVLTree * joinedTree = AVLTree::join(leftTree, rightTree);
     assert(joinedTree->checkAVL());
     joinedTree->printBFSOrder();
     
     int joinTreeSum = joinedTree->sumOfKeys();
     assert(joinTreeSum == (leftTreeSum + rightTreeSum));
     
+    cout << "SPLIT TREES\n==========" << endl;
+    AVLTree::SplitRecord * sRecord = AVLTree::split(joinedTree);
+
+    int splitKey = sRecord->splitKey;
+    AVLTree * newLeftTree = sRecord->leftTree;
+    AVLTree * newRightTree = sRecord->rightTree;
+    cout << "Split Key: " << splitKey << endl;
+    
+    cout << "[Left Tree]";
+    newLeftTree->printBFSOrder();
+    cout << "[Right Tree]";
+    newRightTree->printBFSOrder();
+    
+    cout << "Empty tree join" << endl;
+    AVLTree * emptyTree = new AVLTree();
+    assert( AVLTree::split(emptyTree) == NULL);
+    
+    AVLTree * joinedWithEmpty = AVLTree::join(emptyTree, newRightTree);
+    joinedWithEmpty->printBFSOrder();
+    assert(joinedWithEmpty->checkAVL());
     
 }   
 
