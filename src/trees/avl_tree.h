@@ -47,6 +47,7 @@ private:
     
     int getHeight(Node * node);
     void updateHeight(Node * node);
+    int getBalance(Node * node);
     void rebalance(Node * node);
     void leftRotate(Node * node);
     void rightRotate(Node * node);
@@ -61,13 +62,17 @@ private:
     bool doesAVLHold(Node * node);
     void freeTraversal(Node * node);
     int sumKeys(Node * node);
+    void printBFSOrder(Node * node);
 public:
     AVLTree();
     ~AVLTree();
     virtual bool contains(const int & key);
     virtual bool insert(const int & key);
     virtual bool erase(const int & key);
+    virtual AVLTree * join(AVLTree * rightTree);
     int sumOfKeys();
+    int maxKey();
+    int minKey();
     //virtual void traversal(const int & key);
     void printInOrderTraversal();
     void printBFSOrder();
@@ -86,6 +91,10 @@ int AVLTree::getHeight(Node* node) {
 
 void AVLTree::updateHeight(Node * node) {
     node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
+}
+
+int AVLTree::getBalance(Node * node) {
+    return getHeight(node->left) - getHeight(node->right);
 }
 
 void AVLTree::rebalance(Node * node) {
@@ -200,12 +209,30 @@ AVLTree::Node * AVLTree::get_min(Node * node) {
     return curr;
 }
 
+int AVLTree::minKey() {
+    int min = -1;
+    Node * minNode = get_min(root);
+    if (minNode != NULL) {
+        min = minNode->key;
+    }
+    return min;
+}
+
 AVLTree::Node * AVLTree::get_max(Node * node) {
     Node * curr = node;
     while ( curr->right != NULL) {
         curr = curr->right;
     }
     return curr;
+}
+
+int AVLTree::maxKey() {
+    int max = -1;
+    Node * maxNode = get_max(root);
+    if (maxNode != NULL) {
+        max = maxNode->key;
+    }
+    return max;
 }
 
 AVLTree::AVLTree() {
@@ -322,35 +349,149 @@ void AVLTree::unlink(Node * node) {
 bool AVLTree::erase(const int & key) {
     Node * node = search(key);
     
-    if ( node == NULL || node->key != key )
+    if ( node == NULL || node->key != key ) {
         return false;
+    }
     
     /* Key is in tree, delete it */
-    Node * origParent = node->parent;
+    Node * parent;
     
     if ( (node->left== NULL) || (node->right == NULL) ) {
         /* Node does NOT have two children */
+        parent = node->parent;
         unlink(node);
         delete(node);
     }
     else {
         Node * pred = predecessor(node);
-        
         /* swap keys */
         int temp = node->key;
         node->key = pred->key;
         pred->key = temp;
+        parent = pred->parent;
         
-        /* pred contains key, and should be easier to delete */
         unlink(pred);
         delete(pred);
     }
     
-    if (origParent == NULL )
-        rebalance(root);
-    else
-        rebalance(origParent); 
+    rebalance(parent); 
     return true;
+}
+
+
+AVLTree * AVLTree::join(AVLTree * rightTree) {
+    /* Assumption: rightTree's smallest key > this tree's largest key */
+    AVLTree * joinedTree = new AVLTree();
+    AVLTree * leftTree = this;
+   
+    int leftHeight = leftTree->root->height;
+    int rightHeight = rightTree->root->height;
+    
+    /* Check if left (this) tree has keys */
+    if(leftTree->root == NULL){
+        joinedTree->root = rightTree->root;
+        return joinedTree;
+    }
+    
+    /* Check if right tree has keys */
+    if(rightTree->root == NULL){
+        joinedTree->root = leftTree->root;
+        return joinedTree;
+    }
+    
+    /* Both trees are non-empty, non-trivial join */
+    if ( leftHeight >= rightHeight ) {
+        int minKey = rightTree->minKey();
+        rightTree->erase(minKey);
+        int newRightHeight = rightTree->root->height;
+        
+        Node * newNode = new Node(minKey, NULL, NULL, NULL, 0);
+        Node * u = NULL;
+        Node * v = leftTree->root;
+        int currHeight = leftHeight;
+        while (currHeight > newRightHeight + 1) {
+            if (leftTree->getBalance(v) == -1) {
+                currHeight = currHeight - 2;
+            }
+            else {
+                currHeight = currHeight - 1;
+            }
+            u = v;
+            v = v->right;
+        }
+        newNode->left = v;
+        if ( v != NULL ) {
+            v->parent = newNode;
+        }
+        newNode->right = rightTree->root;
+        if (rightTree->root != NULL) {
+            rightTree->root->parent = newNode;
+        }
+        
+        updateHeight(newNode);
+        
+        if ( u == NULL ) {
+            joinedTree->root = newNode;
+        }
+        else if (u->left == v) {
+            u->left = newNode;
+            newNode->parent = u;
+            joinedTree->root = leftTree->root;
+        }
+        else {
+            u->right = newNode;
+            newNode->parent = u;
+            joinedTree->root = leftTree->root;
+        }
+        joinedTree->rebalance(u);
+    }
+    else { /* symmetric case */
+        int maxKey = leftTree->maxKey();
+        leftTree->erase(maxKey);
+        int newLeftHeight = leftTree->root->height;
+        
+        Node * newNode = new Node(maxKey, NULL, NULL, NULL, 0);
+        
+        Node * u = NULL;
+        Node * v = rightTree->root;
+        int currHeight = rightHeight;
+        while (currHeight > newLeftHeight + 1) {
+            if (rightTree->getBalance(v) == 1) {
+                currHeight = currHeight - 2;
+            }
+            else {
+                currHeight = currHeight - 1;
+            }
+            u = v;
+            v = v->left;
+        }
+        
+        newNode->right = v;
+        if ( v != NULL ) {
+            v->parent = newNode;
+        }
+        newNode->left = leftTree->root;
+        if (leftTree->root != NULL) {
+            leftTree->root->parent = newNode;
+        }   
+        updateHeight(newNode);
+        
+        if ( u == NULL ) {
+            joinedTree->root = newNode;
+        }
+        else if (u->left == v) {
+            u->left = newNode;
+            newNode->parent = u;
+            joinedTree->root = rightTree->root;
+        }
+        else {
+            u->right = newNode;
+            newNode->parent = u;
+            joinedTree->root = rightTree->root;
+        }
+        joinedTree->rebalance(u);
+    }
+    return joinedTree;
 }
 
 int AVLTree::sumKeys(Node * node) {
@@ -390,6 +531,12 @@ bool AVLTree::doesAVLHold(Node * node) {
    
     holds *= abs(getHeight(node->left) - getHeight(node->right)) <= 1 ? true : false;
     
+    if (holds == false) {
+        cout << "Left Height: " << getHeight(node->left) << endl;
+        //printBFSOrder(node->left);
+        cout << "Right Height: " << getHeight(node->right) << endl;
+        //printBFSOrder(node->right);
+    }
     return holds; 
     
 }
@@ -398,23 +545,27 @@ bool AVLTree::checkAVL( ) {
     return doesAVLHold(root);
 }
 
-
+void AVLTree::printBFSOrder(Node * node) {
+    if (node != NULL) {
+        queue<Node *> q;;
+        q.push(node);
+        printf("start-");
+        while ( !q.empty() ) {
+            Node * curr = q.front();
+            q.pop();
+            int parentKey = curr->parent == NULL? 0 : curr->parent->key;
+            printf("%d(p(%d)->", curr->key, parentKey);
+            if (curr->left != NULL)
+                q.push(curr->left);
+            if (curr->right != NULL)
+                q.push(curr->right);
+        }
+        printf("end\n"); 
+    }
+}
 
 void AVLTree::printBFSOrder() {
-
-    queue<Node *> q;;
-    q.push(root);
-    printf("start-");
-    while ( !q.empty() ) {
-        Node * curr = q.front();
-        q.pop();
-        printf("%d->", curr->key);
-        if (curr->left != NULL)
-            q.push(curr->left);
-        if (curr->right != NULL)
-            q.push(curr->right);
-    }
-    printf("end\n");
+    printBFSOrder(root);
 }
 
 #endif /* AVL_TREE_H */

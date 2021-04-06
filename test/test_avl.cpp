@@ -21,7 +21,7 @@
 #include "../src/trees/avl_tree.h"
 #include "../src/util.h"\
 
-#define RANDOM_SEED         5
+#define RANDOM_SEED         28
 
 using namespace std;
 
@@ -44,16 +44,16 @@ void simple_test() {
     assert( tree_insert(tree, 1) );
     assert( tree_insert(tree, 3) );
     assert( tree_insert(tree, 2) );
-    tree->printInOrderTraversal();
+    //tree->printInOrderTraversal();
     tree->printBFSOrder();
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
     assert( !tree_insert(tree, 2) );
-    tree->printInOrderTraversal();
+    //tree->printInOrderTraversal();
     tree->printBFSOrder();
     
     assert( tree_delete(tree, 3) );
-    tree->printInOrderTraversal();
+    //tree->printInOrderTraversal();
     tree->printBFSOrder();
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
@@ -61,7 +61,7 @@ void simple_test() {
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
     assert( tree_delete(tree, 2));
-    tree->printInOrderTraversal();
+    //tree->printInOrderTraversal();
     tree->printBFSOrder();
     
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
@@ -119,6 +119,8 @@ void timed_test(int millis) {
             
         }
         else {
+            
+            
             bool op = tree->erase(num);
             bool expected;
             
@@ -134,11 +136,12 @@ void timed_test(int millis) {
                 // deleted num from set
                 numbers.erase(num);
                 checksum -= num;
+                
             }
             deleteOps++;
         }
         numOps++;
-        //assert(tree->checkAVL());
+        assert(tree->checkAVL());
             
     }
     
@@ -153,6 +156,34 @@ void timed_test(int millis) {
     cout << "Timed test complete." << endl;
     
 }
+
+void split_join_test() {
+    int MIDPOINT = 10;
+    AVLTree * leftTree = new AVLTree();
+    AVLTree * rightTree = new AVLTree();
+    for (int i = 1; i <= MIDPOINT; i++)
+        leftTree->insert(i);
+    
+    leftTree->printBFSOrder();
+    
+    for (int i = MIDPOINT + 1; i <= MIDPOINT + 3 ; i++) 
+       rightTree->insert(i);
+
+    rightTree->printBFSOrder();
+    
+    int leftTreeSum = leftTree->sumOfKeys();
+    int rightTreeSum = rightTree->sumOfKeys();
+    
+    
+    AVLTree * joinedTree = leftTree->join(rightTree);
+    assert(joinedTree->checkAVL());
+    joinedTree->printBFSOrder();
+    
+    int joinTreeSum = joinedTree->sumOfKeys();
+    assert(joinTreeSum == (leftTreeSum + rightTreeSum));
+    
+    
+}   
 
 /*
  * 
@@ -180,6 +211,7 @@ int main(int argc, char** argv) {
     
     simple_test( );
     timed_test( millisToRun );
+    split_join_test( );
     
     
     
