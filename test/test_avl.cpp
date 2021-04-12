@@ -19,7 +19,7 @@
 #include <string>
 #include <cstring>
 #include "../src/trees/avl_tree.h"
-#include "../src/util.h"\
+#include "../src/util.h"
 
 #define RANDOM_SEED         28
 
@@ -184,11 +184,11 @@ void split_join_test() {
     assert(joinTreeSum == (leftTreeSum + rightTreeSum));
     
     cout << "SPLIT TREES\n==========" << endl;
-    AVLTree::SplitRecord * sRecord = AVLTree::split(joinedTree);
-
-    int splitKey = sRecord->splitKey;
-    AVLTree * newLeftTree = sRecord->leftTree;
-    AVLTree * newRightTree = sRecord->rightTree;
+    std::tuple<int, AVLTree *, AVLTree *> tuple = AVLTree::split(joinedTree);
+   
+    int splitKey = std::get<0>(tuple);
+    AVLTree * newLeftTree = std::get<1>(tuple);
+    AVLTree * newRightTree = std::get<2>(tuple);
     cout << "Split Key: " << splitKey << endl;
     
     cout << "[Left Tree]";
@@ -198,7 +198,13 @@ void split_join_test() {
     
     cout << "Empty tree join" << endl;
     AVLTree * emptyTree = new AVLTree();
-    assert( AVLTree::split(emptyTree) == NULL);
+    std::tuple<int, AVLTree *, AVLTree *> nullTuple = AVLTree::split(emptyTree);
+    int invalidKey = std::get<0>(nullTuple);
+    AVLTree * nullLeft = std::get<1>(nullTuple);
+    AVLTree * nullRight = std::get<2>(nullTuple);
+    assert(invalidKey == -1);
+    assert(nullLeft == nullptr);
+    assert(nullRight == nullptr);
     
     AVLTree * joinedWithEmpty = AVLTree::join(emptyTree, newRightTree);
     joinedWithEmpty->printBFSOrder();

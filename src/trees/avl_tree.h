@@ -16,7 +16,10 @@
 
 #include <algorithm>    /* for max */
 #include <queue>        /* used in BFS */
-#include "util.h"
+#include <iostream>
+#include "interfaces.h"
+
+#define INVALID_SPLIT_KEY     -1
 
 /* Sequential AVL Tree */
 using namespace std;
@@ -33,18 +36,11 @@ private:
             key(_key), parent(_parent), left(_left), right(_right), height(_height) {
             
         }
-        
-        bool isLeaf( ) {
-            return (left == NULL) && (right == NULL);
-        }
-        
-        bool isParentOf(Node * other) {
-            return (left == other || right == other);
-        }
     };
     
     Node * root;
     
+    /* AVL Tree maintenance and balancing methods */
     int getHeight(Node * node);
     void updateHeight(Node * node);
     int getBalance(Node * node);
@@ -58,35 +54,37 @@ private:
     Node * get_max(Node * node);
     void unlink(Node * node);
     
+    /* Debugging methods */
     void printInOrderTraversal(Node * node);
     bool doesAVLHold(Node * node);
-    void freeTraversal(Node * node);
     int sumKeys(Node * node);
     void printBFSOrder(Node * node);
     
+    /* Memory reclamation */
+    void freeTraversal(Node * node);
     
 public:
-    struct SplitRecord {
-        AVLTree * leftTree;
-        AVLTree * rightTree;
-        int splitKey;
-        
-        SplitRecord() {
-            
-        }
-    };
+    
+
     
     AVLTree();
     ~AVLTree();
+    
+    /* Dictionary operations  */
     virtual bool contains(const int & key);
     virtual bool insert(const int & key);
     virtual bool erase(const int & key);
+    
+    /* Set operations */
     static AVLTree * join(AVLTree * leftTree, AVLTree * rightTree);
-    static SplitRecord * split(AVLTree * tree);
-    int sumOfKeys();
+    static std::tuple<int, AVLTree *, AVLTree *> split(AVLTree * tree);
+    
+    /* Useful methods */
     int maxKey();
     int minKey();
-    //virtual void traversal(const int & key);
+    
+    /* Debugging methods */
+    int sumOfKeys();
     void printInOrderTraversal();
     void printBFSOrder();
     bool checkAVL( );
@@ -506,24 +504,22 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
     return joinedTree;
 }
 
-AVLTree::SplitRecord * AVLTree::split(AVLTree * tree) {
-    SplitRecord * sRecord = new SplitRecord();
+std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
     Node * leftRoot = NULL;
     Node * rightRoot = NULL;
     
+    int splitKey;
     if (tree->root == NULL) {
         /* empty tree */
-        delete(sRecord);
-        return NULL;
+        return std::make_tuple(INVALID_SPLIT_KEY, nullptr, nullptr);
     }
-    else if (tree->root->left == NULL && tree->root->right == NULL) {
+    else if (tree->root->left == NULL && tree->root->right == nullptr) {
         /* Tree only has one node */
-        delete(sRecord);
-        return NULL;
+        return std::make_tuple(INVALID_SPLIT_KEY, nullptr, nullptr);
     }
     else if (tree->root->left == NULL) {
         /* root's left child is NULL, right child is non-NULL */
-        sRecord->splitKey = tree->root->right->key;
+        splitKey = tree->root->right->key;
         rightRoot = tree->root->right;
         rightRoot->parent = NULL;
         tree->root->right = NULL;
@@ -531,7 +527,7 @@ AVLTree::SplitRecord * AVLTree::split(AVLTree * tree) {
     }
     else {
         /* root's left child is non-NULL */
-        sRecord->splitKey = tree->root->key;
+        splitKey = tree->root->key;
         leftRoot = tree->root->left;
         leftRoot->parent = NULL;
         tree->root->left = NULL;
@@ -546,7 +542,7 @@ AVLTree::SplitRecord * AVLTree::split(AVLTree * tree) {
             tree->root = tree->root->right;
             tree->root->parent = NULL;   
             delete(oldRoot);
-            tree->insert(sRecord->splitKey);
+            tree->insert(splitKey);
             rightRoot = tree->root;
             
         }
@@ -557,10 +553,8 @@ AVLTree::SplitRecord * AVLTree::split(AVLTree * tree) {
     rightTree->root = rightRoot;
      
     /* TODO Update heights? */
-    sRecord->rightTree = rightTree;
-    sRecord->leftTree = leftTree;
-    
-    return sRecord;
+    return std::make_tuple(splitKey, leftTree, rightTree);
+
 }
 
 int AVLTree::sumKeys(Node * node) {
