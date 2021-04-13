@@ -16,6 +16,7 @@
 
 #include "base_node.h"
 #include "../util.h"
+#include <queue>        /* used in BFS */
 
 
 /*
@@ -44,6 +45,8 @@ private:
     BaseNode * rightMostBaseNode(CA_Node * node);
     RouteNode * parentOf(RouteNode * node);
     
+    long calcSubtreeKeySum(CA_Node * node);
+    
 public:
     CATree(int totalThreads, int minKey, int maxKey);
     ~CATree();
@@ -54,12 +57,15 @@ public:
     bool erase(int tid, const int & key);
     
     void printDebuggingDetails();
-    int getSumOfKeys();
+    long getSumOfKeys();
     
 };
 
 CATree::CATree(int _numThreads, int _minKey, int _maxKey) : numThreads(_numThreads), minKey(_minKey), maxKey(_maxKey) {
-    root = new BaseNode();
+    BaseNode * baseRoot = new BaseNode();
+    AVLTree * tree = new AVLTree();
+    baseRoot->setOrderedSet(tree);
+    root = baseRoot;
 }
 
 CATree::~CATree() {
@@ -312,10 +318,36 @@ void CATree::highContentionSplit(BaseNode * baseNode) {
             
 } // end highContentionSplit
 
+
+/** Helper method for calculating the sum of the keys IN THE ORDERED SETS that 
+ *  are in the subtree rooted at node
+ * 
+ * @param node
+ * @return subtree sum
+ */
+long CATree::calcSubtreeKeySum(CA_Node* node) {
+    assert(node != NULL);
+    BaseNode * baseNode;
+    long sum = 0;
+    if ( (baseNode = dynamic_cast<BaseNode *>(node)) != NULL ) {
+        /* node is a base node, get ordered set */
+        sum = baseNode->getOrderedSet()->sumOfKeys();
+    }
+    else {
+        RouteNode * routeNode = dynamic_cast<RouteNode *>(node); //use static_cast?
+        if ( routeNode->getLeft() != NULL ) 
+            sum += calcSubtreeKeySum(routeNode->getLeft());
+        if (routeNode->getRight() != NULL )
+            sum+= calcSubtreeKeySum(routeNode->getRight());
+    }
+    return sum;
+}
+
 /**
  * Public Methods
  */
 bool CATree::contains(int tid, const int & key) {
+    assert( (key >= minKey) && (key <= maxKey) );
     while (true) {
         bool result;
         BaseNode * baseNode = getBaseNode(key);
@@ -334,6 +366,7 @@ bool CATree::contains(int tid, const int & key) {
 }
 
 bool CATree::insert(int tid, const int & key) {
+    assert( (key >= minKey) && (key <= maxKey) );
     while (true) {
         bool result;
         BaseNode * baseNode = getBaseNode(key);
@@ -352,7 +385,7 @@ bool CATree::insert(int tid, const int & key) {
 }
 
 bool CATree::erase(int tid, const int & key) {
-    assert( (key <= minKey) && (key <= maxKey) );
+    assert( (key >= minKey) && (key <= maxKey) );
     while (true) {
         bool result;
         BaseNode * baseNode = getBaseNode(key);
@@ -370,12 +403,40 @@ bool CATree::erase(int tid, const int & key) {
     }
 }
 
+
+
 void CATree::printDebuggingDetails() {
+    /* Tree walk the CA Tree and count the number of Base Nodes and Route Nodes */
+    int numBaseNodes = 0;
+    int numRouteNodes = 0;
+    queue<CA_Node *> q;
+    q.push(root);
+    while ( !q.empty() ) {
+        CA_Node * curr = q.front();
+        q.pop();
+        BaseNode * baseNode;
+        if ( (baseNode = dynamic_cast<BaseNode *>(curr)) != NULL ) {
+            /* curr is a base node */
+            numBaseNodes++;
+        }
+        else {
+            /* curr is a route node */
+            numRouteNodes++;
+            RouteNode * routeNode = dynamic_cast<RouteNode *>(curr);
+            if ( routeNode->getLeft() != NULL )
+                q.push(routeNode->getLeft());
+            
+            if ( routeNode->getRight() != NULL )
+                q.push(routeNode->getRight());       
+        }        
+    }
     
+    cout << "Number of base nodes: " << numBaseNodes << endl;
+    cout << "Number of route nodes: " << numRouteNodes << endl;
 }
 
-int CATree::getSumOfKeys() {
-    return -1;
+long CATree::getSumOfKeys() {
+    return calcSubtreeKeySum(root);
 }
 
 #endif /* CA_TREE_H */

@@ -145,6 +145,7 @@ void runExperiment(int keyRangeSize, int millisToRun, int totalThreads, double i
      */
     
     g->timerFromStart.startTimer();
+    
     if(keyRangeSize > 2){
         for (int attempts=0;;++attempts) {
             double totalUpdatePercent = insertPercent + deletePercent;
@@ -224,7 +225,6 @@ int main(int argc, char** argv) {
         cout<<"    -t [int]     milliseconds to run"<<endl;
         cout<<"    -s [int]     size of the key range that random keys will be drawn from (i.e., range [1, s])"<<endl;
         cout<<"    -n [int]     number of threads that will perform inserts and deletes"<<endl;
-        cout<<"    -r           enables memory reclamation"<<endl;
         cout<<"    -i [double]  percent of operations that will be insert (example: 20)"<<endl;
         cout<<"    -d [double]  percent of operations that will be delete (example: 20)"<<endl;
         cout<<"                 (100 - i - d)% of operations will be contains"<<endl;
@@ -263,13 +263,22 @@ int main(int argc, char** argv) {
     }
     std::cout<<std::endl;
     
+    // print configuration for debugging
+    PRINT(MAX_THREADS);
+    PRINT(totalThreads);
+    PRINT(keyRangeSize);
+    PRINT(insertPercent);
+    PRINT(deletePercent);
+    PRINT(millisToRun);
+    cout<<endl;
+    
     // check for too large thread count
     if (totalThreads >= MAX_THREADS) {
         std::cout<<"ERROR: totalThreads="<<totalThreads<<" >= MAX_THREADS="<<MAX_THREADS<<std::endl;
         return 1;
     }
     
-    runExperiment<CATree>(keyRangeSize, totalThreads, millisToRun, insertPercent, deletePercent);
+    runExperiment<CATree>(keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
     
     return 0;
 }
