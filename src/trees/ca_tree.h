@@ -35,9 +35,9 @@ private:
     
     CA_Node * root;
     /* Contention Adapting */
-    void highContentionSplit(BaseNode * baseNode);
-    void lowContentionJoin(BaseNode * baseNode);
-    void adaptIfNeeded(BaseNode * baseNode);
+    void highContentionSplit(int tid, BaseNode * baseNode);
+    void lowContentionJoin(int tid, BaseNode * baseNode);
+    void adaptIfNeeded(int tid, BaseNode * baseNode);
     
     /* Helpers */
     BaseNode * getBaseNode(const int & key);
@@ -75,8 +75,7 @@ CATree::~CATree() {
 
 BaseNode * CATree::getBaseNode(const int & key) {
     CA_Node * currNode = root;
-    RouteNode * currNodeR;
-    while ( (currNodeR = dynamic_cast<RouteNode *>(currNode)) != NULL ) {
+    while ( RouteNode * currNodeR = dynamic_cast<RouteNode *>(currNode) ) {
         if ( currNodeR->getKey() < key ) {
             currNode = currNodeR->getLeft();
         }
@@ -90,8 +89,7 @@ BaseNode * CATree::getBaseNode(const int & key) {
 
 BaseNode * CATree::leftmostBaseNode(CA_Node * node) {
     CA_Node * currNode = node;
-    RouteNode * r;
-    while ( (r = dynamic_cast<RouteNode *>(currNode)) != NULL ) {
+    while ( RouteNode * r = dynamic_cast<RouteNode *>(currNode) ) {
         currNode = r->getLeft();
     }
     /* Drop out when we reach base node, cast and return */
@@ -101,8 +99,7 @@ BaseNode * CATree::leftmostBaseNode(CA_Node * node) {
 
 BaseNode * CATree::rightMostBaseNode(CA_Node* node) {
     CA_Node * currNode = node;
-    RouteNode * r;
-    while ( (r = dynamic_cast<RouteNode *>(currNode)) != NULL ) {
+    while ( RouteNode * r = dynamic_cast<RouteNode *>(currNode) ) {
         currNode = r->getRight();
     }
     /* Drop out when we reach base node, cast and return */
@@ -127,17 +124,19 @@ RouteNode * CATree::parentOf(RouteNode* node) {
     return parent;
 }
 
-void CATree::adaptIfNeeded(BaseNode* baseNode) {
+void CATree::adaptIfNeeded(int tid, BaseNode* baseNode) {
     
     if (baseNode->isHighContentionLimitReached()) {
-        highContentionSplit(baseNode);
+        TRACE TPRINT("Attempting high contention split");
+        highContentionSplit(tid, baseNode);
     }
     else if (baseNode->isLowContentionLimitReached()) {
-        lowContentionJoin(baseNode);
+        TRACE TPRINT("Attempting low contention join");
+        lowContentionJoin(tid, baseNode);
     }
 }
 
-void CATree::lowContentionJoin(BaseNode * baseNode) {
+void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
     if (parent == NULL) {
         baseNode->resetStatistics();
@@ -209,6 +208,8 @@ void CATree::lowContentionJoin(BaseNode * baseNode) {
             neighborBase->invalidate();
             neighborBase->unlock();
             baseNode->invalidate();
+            
+            TRACE TPRINT("Executed low contention join");
         }
     }
     else { /* Symmetric case */
@@ -278,11 +279,13 @@ void CATree::lowContentionJoin(BaseNode * baseNode) {
             neighborBase->invalidate();
             neighborBase->unlock();
             baseNode->invalidate();
+            
+            TRACE TPRINT("Executed low contention join");
         }
     }
 } // end lowContentionJoin
 
-void CATree::highContentionSplit(BaseNode * baseNode) {
+void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
     AVLTree * baseSet = baseNode->getOrderedSet();
     std::tuple<int, AVLTree *, AVLTree *> tuple = AVLTree::split(baseSet);
@@ -315,7 +318,7 @@ void CATree::highContentionSplit(BaseNode * baseNode) {
         }
     }
     baseNode->invalidate();
-            
+    TRACE TPRINT("Executed high contention split, splitKey: " << splitKey);        
 } // end highContentionSplit
 
 
@@ -327,9 +330,8 @@ void CATree::highContentionSplit(BaseNode * baseNode) {
  */
 long CATree::calcSubtreeKeySum(CA_Node* node) {
     assert(node != NULL);
-    BaseNode * baseNode;
     long sum = 0;
-    if ( (baseNode = dynamic_cast<BaseNode *>(node)) != NULL ) {
+    if ( BaseNode * baseNode = dynamic_cast<BaseNode *>(node)) {
         /* node is a base node, get ordered set */
         sum = baseNode->getOrderedSet()->sumOfKeys();
     }
@@ -359,7 +361,7 @@ bool CATree::contains(int tid, const int & key) {
         }
         AVLTree * set = baseNode->getOrderedSet();
         result = set->contains(key);
-        adaptIfNeeded(baseNode);
+        adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
         return result;
     }
@@ -367,7 +369,9 @@ bool CATree::contains(int tid, const int & key) {
 
 bool CATree::insert(int tid, const int & key) {
     assert( (key >= minKey) && (key <= maxKey) );
+    //TRACE TPRINT("Inserting key: " << key);
     while (true) {
+        //TRACE TPRINT("Inserting key: " << key);
         bool result;
         BaseNode * baseNode = getBaseNode(key);
         baseNode->lock();
@@ -378,7 +382,14 @@ bool CATree::insert(int tid, const int & key) {
         }
         AVLTree * set = baseNode->getOrderedSet();
         result = set->insert(key);
-        adaptIfNeeded(baseNode);
+        if (result) {
+            TRACE TPRINT("Inserted key " << key);
+        }
+        else {
+            TRACE TPRINT("Failed to insert key " << key);
+        }
+        
+        adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
         return result;
     }
@@ -397,7 +408,7 @@ bool CATree::erase(int tid, const int & key) {
         }
         AVLTree * set = baseNode->getOrderedSet();
         result = set->erase(key);
-        adaptIfNeeded(baseNode);
+        adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
         return result;
     }
@@ -414,8 +425,7 @@ void CATree::printDebuggingDetails() {
     while ( !q.empty() ) {
         CA_Node * curr = q.front();
         q.pop();
-        BaseNode * baseNode;
-        if ( (baseNode = dynamic_cast<BaseNode *>(curr)) != NULL ) {
+        if ( BaseNode * baseNode = dynamic_cast<BaseNode *>(curr) ) {
             /* curr is a base node */
             numBaseNodes++;
         }

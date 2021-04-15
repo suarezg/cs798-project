@@ -1,10 +1,10 @@
 GPP = g++
-FLAGS = -O3 -g
+FLAGS = -O0 -g
 #FLAGS += -DNDEBUG
 LDFLAGS = -pthread
 
 #PROGRAMS = test_avl
-PROGRAMS = benchmark benchmark_sanitize test_avl
+PROGRAMS = benchmark benchmark_debug benchmark_sanitize test_avl
 
 all: $(PROGRAMS)
 
@@ -17,6 +17,9 @@ benchmark: build
 
 benchmark_sanitize:
 	$(GPP) $(FLAGS) -MMD -MP -MF build/$@.d -o $@ test/benchmark.cpp $(LDFLAGS) -fsanitize=address -static-libasan
+
+benchmark_debug:
+	$(GPP) $(FLAGS) -o $@.out test/benchmark.cpp -DTRACE=if\(1\) $(LDFLAGS)
 
 	
 test_avl: build
