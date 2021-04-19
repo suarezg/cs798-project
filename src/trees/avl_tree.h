@@ -19,7 +19,7 @@
 #include <iostream>
 #include "interfaces.h"
 
-#define INVALID_SPLIT_KEY     -1
+#define INVALID_KEY     -1
 
 /* Sequential AVL Tree */
 using namespace std;
@@ -30,29 +30,30 @@ private:
         Node * parent;
         Node * left;
         Node * right;
-        int height;
+        int balance;
         
-        Node(int _key, Node * _parent, Node * _left, Node * _right, int _height) :
-            key(_key), parent(_parent), left(_left), right(_right), height(_height) {
+        Node(int _key, Node * _parent, Node * _left, Node * _right) :
+            key(_key), parent(_parent), left(_left), right(_right), balance(0) {
             
         }
     };
     
     Node * root;
+    int size;
     
     /* AVL Tree maintenance and balancing methods */
-    int getHeight(Node * node);
-    void updateHeight(Node * node);
-    int getBalance(Node * node);
-    void rebalance(Node * node);
-    void leftRotate(Node * node);
-    void rightRotate(Node * node);
-    Node * search(const int & key);
-    Node * successor(Node * node);
-    Node * predecessor(Node * node);
-    Node * get_min(Node * node);
-    Node * get_max(Node * node);
-    void unlink(Node * node);
+    int computeHeight();
+    int minKey();
+    int maxKey();
+    Node * getAVLNode(const int & key);
+    void rotateLeft(Node * prevNode);
+    void rotateRight(Node * prevNode);
+    void rotateDoubleRight(Node * prevNode);
+    void rotateDoubleLeft(Node * prevNode);
+    bool replaceWithRightmost(Node * toReplaceInNode);
+    bool deleteBalanceLeft(Node * currentNode);
+    bool deleteBalanceRight(Node * currentNode);
+    
     
     /* Debugging methods */
     void printInOrderTraversal(Node * node);
@@ -64,9 +65,7 @@ private:
     void freeTraversal(Node * node);
     
 public:
-    
-
-    
+   
     AVLTree();
     ~AVLTree();
     
@@ -80,8 +79,9 @@ public:
     static std::tuple<int, AVLTree *, AVLTree *> split(AVLTree * tree);
     
     /* Useful methods */
-    int maxKey();
-    int minKey();
+    int getSize();
+    void setSize(int size);
+    bool isEmpty();
     
     /* Debugging methods */
     int sumOfKeys();
@@ -91,163 +91,341 @@ public:
     
 };
 
-
-
-int AVLTree::getHeight(Node* node) {
-    if (node == NULL)
-        return -1;
-    else
-        return node->height;
-}
-
-void AVLTree::updateHeight(Node * node) {
-    node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
-}
-
-int AVLTree::getBalance(Node * node) {
-    return getHeight(node->left) - getHeight(node->right);
-}
-
-void AVLTree::rebalance(Node * node) {
-    while (node != NULL) {
-        updateHeight(node);
-        if ( getHeight(node->left) >= (2 + getHeight(node->right)) ) {
-            if ( getHeight(node->left->left) >= getHeight(node->left->right) )
-                rightRotate(node);
-            else {
-                leftRotate(node->left);
-                rightRotate(node);
+int AVLTree::computeHeight() {
+    if (root == NULL) {
+        return 0;
+    }
+    else {
+        Node * currentNode = root;
+        int heightSoFar = 1;
+        while (currentNode->left != NULL || currentNode->right != NULL) {
+            if (currentNode->balance == -1) {
+                currentNode = currentNode->left;
             }
-        }
-        else if ( getHeight(node->right) >= (2 + getHeight(node->left)) )  {
-            if ( getHeight(node->right->right) >= getHeight(node->right->left) )
-                leftRotate(node);
             else {
-                rightRotate(node->right);
-                leftRotate(node);
+                currentNode = currentNode->right;
             }
+            heightSoFar++;
         }
-        node = node->parent; 
+        return heightSoFar;
     }
-}
-
-void AVLTree::leftRotate(Node * x) {
-    Node * y = x->right;
-    y->parent = x->parent;
-    if (y->parent == NULL) 
-        root = y; /* x was previously the root */
-    else {
-        if (y->parent->left == x)
-            y->parent->left = y;
-        else
-            y->parent->right = y;
-    }
-    x->right = y->left;
-    if (x->right != NULL)
-        x->right->parent = x;
-    y->left = x;
-    x->parent = y;
-    updateHeight(x);
-    updateHeight(y);
-    
-}
-
-void AVLTree::rightRotate(Node * x) {
-    Node * y = x->left;
-    y->parent = x->parent;
-    if (y->parent == NULL)
-        root = y;
-    else {
-        if (y->parent->left == x)
-            y->parent->left = y;
-        else
-            y->parent->right = y;
-    }
-    x->left = y->right;
-    if (x->left != NULL)
-        x->left->parent = x;
-    y->right = x;
-    x->parent = y;
-    updateHeight(x);
-    updateHeight(y);
-    
-    
-}
-
-AVLTree::Node * AVLTree::successor(Node * node) {
-    Node * succ = NULL;
-    if (node->right != NULL) {
-        succ = get_min(node->right);
-    }
-    else {
-        /* Node does not have a right child, look up the tree for successor */
-        Node * curr = node;
-        while ( (curr->parent != NULL) && (curr->parent->right == curr) ) {
-            /* Walk up the tree until we reach a node that is the left child of the parent */
-            curr = curr->parent;
-        }
-        succ = curr->parent;
-    }
-    return succ;
-}
-
-AVLTree::Node * AVLTree::predecessor(Node * node) {
-    Node * pred = NULL;
-    if (node->left != NULL) {
-        pred = get_max(node->left);
-    }
-    else {
-        /* Node odes not have a left child, look up the tree for predecessor */
-        Node * curr = node;
-        while ( (curr->parent != NULL) && (curr->parent->left == curr) ) {
-            /* Walk up the tree until we reach a node that is the right child of the parent */
-            curr = curr->parent;
-        }
-        
-        pred = curr->parent;    
-    }
-    return pred;
-}
-
-/**
- * returns the node containing the minimum of the tree rooted at @p node
- */
-AVLTree::Node * AVLTree::get_min(Node * node) {
-    Node * curr = node;
-    while ( curr->left != NULL ) {
-        curr = curr->left;
-    }
-    return curr;
 }
 
 int AVLTree::minKey() {
-    int min = -1;
-    Node * minNode = get_min(root);
-    if (minNode != NULL) {
-        min = minNode->key;
+    Node * currentNode = root;
+    while (currentNode->left != NULL) {
+        currentNode = currentNode->left;
     }
-    return min;
-}
-
-AVLTree::Node * AVLTree::get_max(Node * node) {
-    Node * curr = node;
-    while ( curr->right != NULL) {
-        curr = curr->right;
+    if ( currentNode == NULL ) {
+        return INVALID_KEY;
     }
-    return curr;
+    else {
+        return currentNode->key;
+    }
 }
 
 int AVLTree::maxKey() {
-    int max = -1;
-    Node * maxNode = get_max(root);
-    if (maxNode != NULL) {
-        max = maxNode->key;
+    Node * currentNode = root;
+    while (currentNode->right != NULL) {
+        currentNode = currentNode->right;
     }
-    return max;
+    if ( currentNode == NULL ) {
+        return INVALID_KEY;
+    }
+    else {
+        return currentNode->key;
+    }
 }
+
+AVLTree::Node * AVLTree::getAVLNode(const int & key) {
+    Node * currentNode = root;
+    while (currentNode != NULL) {
+        int nodeKey = currentNode->key;
+        if ( key < nodeKey ) {
+            currentNode = currentNode->left;
+        }
+        else if ( key > nodeKey ) {
+            currentNode = currentNode->right;
+        }
+        else {
+            return currentNode;
+        }
+    }
+    return NULL;
+}
+
+void AVLTree::rotateLeft(Node* prevNode) {
+    /* Single left rotation */
+    Node * leftChild = prevNode->left;
+    Node * prevNodeParent = prevNode->parent;
+    prevNode->left = leftChild->right;
+    if (prevNode->left != NULL) {
+        prevNode->left->parent = prevNode;
+    }
+    leftChild->right = prevNode;
+    prevNode->parent = leftChild;
+    prevNode->balance = 0;
+    if (prevNodeParent == NULL) {
+        root = leftChild;
+    }
+    else if (prevNodeParent->left == prevNode) {
+        prevNodeParent->left = leftChild;
+    }
+    else {
+        prevNodeParent->right = leftChild;
+    }
+    leftChild->parent = prevNodeParent;
+    leftChild->balance = 0;
+}
+
+void AVLTree::rotateRight(Node * prevNode) {
+    /* Single right rotation */
+    Node * rightChild = prevNode->right;
+    Node * prevNodeParent = prevNode->parent;
+//    printf("\nPrevNode: (key: %d,%p,  left: %p, right: %p)\n", prevNode->key, prevNode, prevNode->left, prevNode->right);
+//    printf("rightChild: (key: %d,%p, left: %p, right: %p)\n", rightChild->key, rightChild, rightChild->left, rightChild->right);
+//    printf("PrevNodeParent: (key: %d,%p, left: %p, right: %p)\n", prevNodeParent->key, prevNodeParent, prevNodeParent->left, prevNodeParent->right);
+//    
+    prevNode->right = rightChild->left;
+    if (prevNode->right != NULL) {
+        prevNode->right->parent = prevNode;
+    }
+    rightChild->left = prevNode;
+    prevNode->parent = rightChild;
+    prevNode->balance = 0;
+    if (prevNodeParent == NULL) {
+        root = rightChild;
+    }
+    else if (prevNodeParent->left == prevNode) {
+        prevNodeParent->left = rightChild;
+    }
+    else  {
+        prevNodeParent->right = rightChild;
+    }
+    rightChild->parent = prevNodeParent;
+    rightChild->balance = 0;
+    
+//    printf("\nPrevNode: (key: %d,%p,  left: %p, right: %p)\n", prevNode->key, prevNode, prevNode->left, prevNode->right);
+//    printf("rightChild: (key: %d,%p, left: %p, right: %p)\n", rightChild->key, rightChild, rightChild->left, rightChild->right);
+//    printf("PrevNodeParent: (key: %d,%p, left: %p, right: %p)\n", prevNodeParent->key, prevNodeParent, prevNodeParent->left, prevNodeParent->right);
+}
+
+void AVLTree::rotateDoubleRight(Node * prevNode) {
+    Node * prevNodeParent = prevNode->parent;
+    Node * leftChild = prevNode->left;
+    Node * leftChildRightChild = leftChild->right;
+    
+    leftChild->right = leftChildRightChild->left;
+    if (leftChildRightChild->left != NULL) {
+        leftChildRightChild->left->parent = leftChild;
+    }
+    
+    leftChildRightChild->left = leftChild;
+    leftChild->parent = leftChildRightChild;
+    
+    prevNode->left = leftChildRightChild->right;
+    if (leftChildRightChild->right != NULL) {
+        leftChildRightChild->right->parent = prevNode;
+    }
+    
+    leftChildRightChild->right = prevNode;
+    prevNode->parent = leftChildRightChild;
+    
+    prevNode->balance = (leftChildRightChild->balance == -1) ? +1 : 0;
+    leftChild->balance = (leftChildRightChild->balance == 1) ? -1 : 0;
+    
+    if (prevNodeParent == NULL) {
+        root = leftChildRightChild;
+    }
+    else if (prevNodeParent->left == prevNode) {
+        prevNodeParent->left = leftChildRightChild;
+    }
+    else {
+        prevNodeParent->right = leftChildRightChild;
+    }
+    
+    leftChildRightChild->parent = prevNodeParent;
+    leftChildRightChild->balance = 0;   
+}
+
+void AVLTree::rotateDoubleLeft(Node* prevNode) {
+    Node * prevNodeParent = prevNode->parent;
+    Node * rightChild = prevNode->right;
+    Node * rightChildLeftChild = rightChild->left;
+    
+    rightChild->left = rightChildLeftChild->right;
+    if (rightChildLeftChild->right != NULL) {
+        rightChildLeftChild->right->parent = rightChild;
+    }
+    
+    rightChildLeftChild->right = rightChild;
+    rightChild->parent = rightChildLeftChild;
+    
+    prevNode->right = rightChildLeftChild->left;
+    if (rightChildLeftChild->left != NULL) {
+        rightChildLeftChild->left->parent = prevNode;
+    }
+    
+    rightChildLeftChild->left = prevNode;
+    prevNode->parent = rightChildLeftChild;
+    
+    prevNode->balance = (rightChildLeftChild->balance == 1) ? -1: 0;
+    rightChild->balance = (rightChildLeftChild->balance == -1) ? 1 : 0;
+    if (prevNodeParent == NULL) {
+        root = rightChildLeftChild;
+    }
+    else if (prevNodeParent->left == prevNode) {
+        prevNodeParent->left = rightChildLeftChild;
+    }
+    else {
+        prevNodeParent->right = rightChildLeftChild;
+    }
+    rightChildLeftChild->parent = prevNodeParent;
+    rightChildLeftChild->balance = 0;
+}
+
+bool AVLTree::replaceWithRightmost(Node * toReplaceInNode) {
+    Node * currentNode = toReplaceInNode->left;
+    int replacePos = 0;
+    while (currentNode->right != NULL) {
+        replacePos = replacePos + 1;
+        currentNode = currentNode->right;
+    }
+    toReplaceInNode->key = currentNode->key;
+    if (currentNode->parent->right == currentNode) {
+        currentNode->parent->right = currentNode->left;
+    }
+    else {
+        currentNode->parent->left = currentNode->left;
+    }
+    
+    if (currentNode->left != NULL) {
+        currentNode->left->parent = currentNode->parent;
+    }
+    
+    bool continueBalance = true;
+    currentNode = currentNode->parent;
+    while (replacePos > 0 && continueBalance) {
+        Node * operateOn = currentNode;
+        currentNode = currentNode->parent;
+        replacePos = replacePos - 1;
+        continueBalance = deleteBalanceRight(operateOn);
+    }
+    return continueBalance;
+}
+
+bool AVLTree::deleteBalanceLeft(Node * currentNode) {
+    bool continueBalance = true;
+    if (currentNode->balance == -1) {
+        currentNode->balance = 0;
+    }
+    else if (currentNode->balance == 0) {
+        currentNode->balance = 1;
+        continueBalance = false;
+    }
+    else {
+        Node * currentNodeParent = currentNode->parent;
+        Node * rightChild = currentNode->right;
+        int rightChildBalance = rightChild->balance;
+        if (rightChildBalance >= 0) {
+            rotateRight(currentNode);
+            if (rightChildBalance == 0) {
+                currentNode->balance = 1;
+                rightChild->balance = -1;
+                continueBalance = false;
+            }
+        }
+        else {
+            Node * rightChildLeftChild = rightChild->left;
+            int rightChildLeftChildBalance = rightChildLeftChild->balance;
+            rightChild->left = rightChildLeftChild->right;
+            if (rightChildLeftChild->right != NULL) {
+                rightChildLeftChild->right->parent = rightChild;
+            }
+            rightChildLeftChild->right = rightChild;
+            rightChild->parent = rightChildLeftChild;
+            currentNode->right = rightChildLeftChild->left;
+            if (rightChildLeftChild->left != NULL) {
+                rightChildLeftChild->left->parent = currentNode;
+            }
+            rightChildLeftChild->left = currentNode;
+            currentNode->parent = rightChildLeftChild;
+            currentNode->balance = (rightChildLeftChildBalance == 1) ? -1 : 0;
+            rightChild->balance = (rightChildLeftChildBalance == -1) ? 1 : 0;
+            rightChildLeftChild->balance = 0;
+            if (currentNodeParent == NULL) {
+                root = rightChildLeftChild;
+            }
+            else if (currentNodeParent->left == currentNode) {
+                currentNodeParent->left = rightChildLeftChild;
+            }
+            else {
+                currentNodeParent->right = rightChildLeftChild;
+            }
+            rightChildLeftChild->parent = currentNodeParent;
+        }
+    }
+    return continueBalance;
+}
+
+bool AVLTree::deleteBalanceRight(Node * currentNode) {
+    bool continueBalance = true;
+    if (currentNode->balance == 1) {
+        currentNode->balance = 0;
+    }
+    else if (currentNode->balance == 0) {
+        currentNode->balance = -1;
+        continueBalance = false;
+    }
+    else {
+        Node * currentNodeParent = currentNode->parent;
+        Node * leftChild = currentNode->left;
+        int leftChildBalance = leftChild->balance;
+        if (leftChildBalance <= 0) {
+            rotateLeft(currentNode);
+            if (leftChildBalance == 0) {
+                currentNode->balance = -1;
+                leftChild->balance = 1;
+                continueBalance = false;
+            }
+        }
+        else {
+            Node * leftChildRightChild = leftChild->right;
+            int leftChildRightChildBalance = leftChildRightChild->balance;
+            leftChild->right = leftChildRightChild->left;
+            if (leftChildRightChild->left != NULL) {
+                leftChildRightChild->left->parent = leftChild;
+            }
+            leftChildRightChild->left = leftChild;
+            leftChild->parent = leftChildRightChild;
+            currentNode->left = leftChildRightChild->right;
+            if (leftChildRightChild->right != NULL) {
+                leftChildRightChild->right->parent = currentNode;
+            }
+            leftChildRightChild->right = currentNode;
+            currentNode->parent = leftChildRightChild;
+            currentNode->balance = (leftChildRightChildBalance == -1) ? 1 : 0;
+            leftChild->balance = (leftChildRightChildBalance == 1) ? -1 : 0;
+            leftChildRightChild->balance = 0;
+            if (currentNodeParent == NULL) {
+                root = leftChildRightChild;
+            }
+            else if (currentNodeParent->left == currentNode) {
+                currentNodeParent->left = leftChildRightChild;
+            }
+            else {
+                currentNodeParent->right = leftChildRightChild;
+            }
+            leftChildRightChild->parent = currentNodeParent;
+        }
+    }
+    return continueBalance;
+}
+
 
 AVLTree::AVLTree() {
     root = NULL;
+    size = 0;
 }
 
 void AVLTree::freeTraversal(Node * node) {
@@ -266,242 +444,404 @@ AVLTree::~AVLTree() {
         freeTraversal(root);
 }
 
-AVLTree::Node * AVLTree::search(const int & key) {
-    Node * curr = root;
-    while (curr != NULL) {
-        if (curr->key == key)     
-            break; //found key;
-        else if (key < curr->key) {
-            if ( curr->left == NULL )
-                break;
-            else
-                curr = curr->left;
-        }
-        else {
-            if ( curr->right == NULL )
-                break;
-            else
-                curr = curr->right;
-        }
-    }
-    return curr;   
-}
+
 
 bool AVLTree::contains(const int & key) {
-    Node * n = search(key);
-    return (n->key == key);
+    return getAVLNode(key) != NULL;
 }
 
 /* Semantics: Only insert if key is absent */
 bool AVLTree::insert(const int & key) {
     
-    /* BST Insert */
-    Node * node = search(key);
+    Node * prevNode = NULL;
+    Node * currentNode = root;
+    bool dirLeft = true;
     
-    if ( node != NULL && (node->key == key) )
-        return false; //duplicate key
+
+    while (currentNode != NULL) {
+        int nodeKey = currentNode->key;
+        if ( key < nodeKey ) {
+            dirLeft = true;
+            prevNode = currentNode;
+            currentNode = currentNode->left;
+        }
+        else if (key > nodeKey ) {
+            dirLeft = false;
+            prevNode = currentNode;
+            currentNode = currentNode->right;
+        }
+        else {
+            /* key is found, return false */
+            return false;
+        }
+    }
     
-    /* Unique key, create new node */
-    Node * newNode = new Node(key, node, NULL, NULL, 0);
-    if (node == NULL) {
-        /* Tree was empty, set root */
-        root = newNode;
+    /* Unique key, create new node and insert */
+    
+    size = size + 1;
+    currentNode = new Node(key, prevNode, NULL, NULL);
+
+    if (prevNode == NULL) {
+        root = currentNode;
+    }
+    else if (dirLeft) {
+        prevNode->left = currentNode;
     }
     else {
-        assert((node->left == NULL) || (node->right == NULL));
-        if ( key < node->key )
-            node->left = newNode;
-        else
-            node->right = newNode;
+        prevNode->right = currentNode;
     }
-       
-    /* Fix AVL property */
-    rebalance(newNode);
+    
+    /* Rotate and/or update balance of nodes */
+    while (prevNode != NULL) {
+        if (prevNode->left == currentNode) {
+            if (prevNode->balance == -1) {
+                Node * leftChild = prevNode->left;
+                if (leftChild->balance == -1) {
+                    rotateLeft(prevNode);
+                }
+                else {
+                    rotateDoubleRight(prevNode);
+                }
+                break;
+            }
+            else if (prevNode->balance == 0) {
+                prevNode->balance = -1;
+            }
+            else {
+                prevNode->balance = 0;
+                break;
+            }
+        }
+        else {
+            if (prevNode->balance == 1) {
+                Node * rightChild = prevNode->right;
+                if (rightChild->balance == 1) {
+//                    printBFSOrder();
+//                    cout << "prevNode key: " << prevNode->key << endl;
+//                    cout << "currentNode key: " << currentNode->key << endl;
+//                    cout << "rotating right" << endl;
+                    rotateRight(prevNode);
+                   // printBFSOrder();
+                }
+                else {
+                    rotateDoubleLeft(prevNode);
+                }
+                break;
+            }
+            else if (prevNode->balance == 0) {
+                prevNode->balance = 1;
+            }
+            else {
+                prevNode->balance = 0;
+                break;
+            }
+        }
+        currentNode = prevNode;
+        prevNode = prevNode->parent;
+    }
+    
+//    cout << "Inserted key " << key << endl; 
+//    printBFSOrder();
     return true;
 }
 
-void AVLTree::unlink(Node * node) {
-    assert( (node->left == NULL) || (node->right == NULL) );
-    Node * child = node->left != NULL? node->left : node->right;
+bool AVLTree::erase(const int & key) {
     
-    /* NULL node's child pointers */
-    if (node->left != NULL)
-        node->left = NULL;
-    else
-        node->right = NULL;
-
-    if ( node == root  ) {
-        assert(node->parent == NULL);
-        root = child;
-        if ( child != NULL )
-            child->parent = NULL;
-    }
-    else {
-        Node * parent = node->parent;
-        node->parent = NULL;  //NULL node's parent pointer
-        
-        if ( parent->left == node ) {
-            /* node was right child of parent */
-            parent->left = child;
-            if ( child != NULL )
-                child->parent = parent;
+    bool dirLeft = true;
+    Node * currentNode = root;
+    while (currentNode != NULL) {
+        int nodeKey = currentNode->key;
+        if (key < nodeKey) {
+            dirLeft = true;
+            currentNode = currentNode->left;
+        }
+        else if (key > nodeKey) {
+            dirLeft = false;
+            currentNode = currentNode->right;
         }
         else {
-            /* node was right child of parent */
-            parent->right = child;
-            if ( child != NULL )
-                child->parent = parent;
+            size = size - 1;
+            break;
+        }         
+    }
+    
+    if (currentNode == NULL) {
+        return false; //key not found, return false
+    }
+    /* else, found key, delete it */
+    Node * prevNode = currentNode->parent;
+    bool continueFix = true;
+    if (currentNode->left == NULL) {
+        if (prevNode == NULL) {
+            root = currentNode->right;
+        }
+        else if (dirLeft) {
+            prevNode->left = currentNode->right;
+        }
+        else {
+            prevNode->right = currentNode->right;
         }
         
+        if (currentNode->right != NULL) {
+            currentNode->right->parent = prevNode;
+        }
+        currentNode = currentNode->right;
     }
-     
-}
-
-bool AVLTree::erase(const int & key) {
-    Node * node = search(key);
-    
-    if ( node == NULL || node->key != key ) {
-        return false;
-    }
-    
-    /* Key is in tree, delete it */
-    Node * parent;
-    
-    if ( (node->left== NULL) || (node->right == NULL) ) {
-        /* Node does NOT have two children */
-        parent = node->parent;
-        unlink(node);
-        delete(node);
+    else if (currentNode->right == NULL) {
+        if (prevNode == NULL) {
+            root = currentNode->left;
+        }
+        else if (dirLeft) {
+            prevNode->left = currentNode->left;
+        }
+        else {
+            prevNode->right = currentNode->left;
+        }
+        
+        if (currentNode->left != NULL) {
+            currentNode->left->parent = prevNode;
+        }
+        currentNode = currentNode->left;
     }
     else {
-        Node * pred = predecessor(node);
-        /* swap keys */
-        int temp = node->key;
-        node->key = pred->key;
-        pred->key = temp;
-        parent = pred->parent;
-        
-        unlink(pred);
-        delete(pred);
+        if (prevNode == NULL) {
+            continueFix = replaceWithRightmost(currentNode);
+            currentNode = root->left;
+            prevNode = root;
+        }
+        else if (prevNode->left == currentNode) {
+            continueFix = replaceWithRightmost(currentNode);
+            prevNode = prevNode->left;
+            currentNode = prevNode->left;
+            dirLeft = true;
+        }
+        else {
+            continueFix = replaceWithRightmost(currentNode);
+            prevNode = prevNode->right;
+            currentNode = prevNode->left;
+            dirLeft = true;
+        }
+    }
+
+    
+    /* Rebalance */
+    while (continueFix && prevNode != NULL) {
+        Node * nextPrevNode = prevNode->parent;
+        if (nextPrevNode != NULL) {
+            bool findCurrentLeftDir = true;
+            if (nextPrevNode->left == prevNode) {
+                findCurrentLeftDir = true;
+            }
+            else {
+                findCurrentLeftDir = false;
+            }
+            
+            if (currentNode == NULL) {
+                if (dirLeft) 
+                    continueFix = deleteBalanceLeft(prevNode);
+                else 
+                    continueFix = deleteBalanceRight(prevNode);
+            }
+            else {
+                if (prevNode->left == currentNode)
+                    continueFix = deleteBalanceLeft(prevNode);
+                else
+                    continueFix = deleteBalanceRight(prevNode);
+            }
+            
+            if (findCurrentLeftDir)
+                currentNode = nextPrevNode->left;
+            else
+                currentNode = nextPrevNode->right;
+            prevNode = nextPrevNode;
+        }
+        else {
+            if (currentNode == NULL) {
+                if (dirLeft)
+                    continueFix = deleteBalanceLeft(prevNode);
+                else
+                    continueFix = deleteBalanceRight(prevNode);
+            }
+            else {
+                if (prevNode->left == currentNode) {
+                    //cout << "attempting balance" << endl;
+                    continueFix = deleteBalanceLeft(prevNode);
+                }
+                else
+                    continueFix = deleteBalanceRight(prevNode);
+            }
+            prevNode = NULL;
+        }
     }
     
-    rebalance(parent); 
     return true;
 }
 
 
 AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
     /* Assumption: rightTree's smallest key > this tree's largest key */
-    AVLTree * joinedTree = new AVLTree();
+    AVLTree * newTree = new AVLTree();
+    Node * prevNode = NULL;
+    Node * currentNode = NULL;
     
     /* Check if left tree has keys */
     if(leftTree->root == NULL){
-        joinedTree->root = rightTree->root;
-        return joinedTree;
+        newTree->root = rightTree->root;
+        newTree->setSize( leftTree->getSize() + rightTree->getSize());
+        return newTree;
     }
     
     /* Check if right tree has keys */
     if(rightTree->root == NULL){
-        joinedTree->root = leftTree->root;
-        return joinedTree;
+        newTree->root = leftTree->root;
+        newTree->setSize( leftTree->getSize() + rightTree->getSize());
+        return newTree;
     }
     
     /* Both trees are non-empty, non-trivial join */
-    int leftHeight = leftTree->root->height;
-    int rightHeight = rightTree->root->height;
+    int leftHeight = leftTree->computeHeight();
+    int rightHeight = rightTree->computeHeight();
     
     if ( leftHeight >= rightHeight ) {
         int minKey = rightTree->minKey();
         rightTree->erase(minKey);
-        int newRightHeight = rightTree->root->height;
+        rightTree->setSize( rightTree->getSize() + 1);
+        Node * newRoot = new Node(minKey, NULL, NULL, NULL);
+        int newRightHeight = rightTree->computeHeight();
         
-        Node * newNode = new Node(minKey, NULL, NULL, NULL, 0);
-        Node * u = NULL;
-        Node * v = leftTree->root;
+        Node * prevNode = NULL;
+        Node * currentNode = leftTree->root;
         int currHeight = leftHeight;
         while (currHeight > newRightHeight + 1) {
-            if (leftTree->getBalance(v) == -1) {
+            if (currentNode->balance == -1) {
                 currHeight = currHeight - 2;
             }
             else {
                 currHeight = currHeight - 1;
             }
-            u = v;
-            v = v->right;
+            prevNode = currentNode;
+            currentNode = currentNode->right;
         }
-        newNode->left = v;
-        if ( v != NULL ) {
-            v->parent = newNode;
+        Node * oldCurrentNodeParent = prevNode;
+        newRoot->left = currentNode;
+        if ( currentNode != NULL ) {
+            currentNode->parent = newRoot;
         }
-        newNode->right = rightTree->root;
+        newRoot->right = rightTree->root;
         if (rightTree->root != NULL) {
-            rightTree->root->parent = newNode;
+            rightTree->root->parent = newRoot;
         }
         
-        joinedTree->updateHeight(newNode);
+        newRoot->balance = newRightHeight - currHeight;
         
-        if ( u == NULL ) {
-            joinedTree->root = newNode;
+        if ( oldCurrentNodeParent == NULL ) {
+            newTree->root = newRoot;
         }
-        else if (u->left == v) {
-            u->left = newNode;
-            newNode->parent = u;
-            joinedTree->root = leftTree->root;
+        else if (oldCurrentNodeParent->left == currentNode) {
+            prevNode->left = newRoot;
+            newRoot->parent = oldCurrentNodeParent;
+            newTree->root = leftTree->root;
         }
         else {
-            u->right = newNode;
-            newNode->parent = u;
-            joinedTree->root = leftTree->root;
+            oldCurrentNodeParent->right = newRoot;
+            newRoot->parent = oldCurrentNodeParent;
+            newTree->root = leftTree->root;
         }
-        joinedTree->rebalance(u);
+        currentNode = newRoot;
     }
     else { /* symmetric case */
         int maxKey = leftTree->maxKey();
         leftTree->erase(maxKey);
-        int newLeftHeight = leftTree->root->height;
+        leftTree->setSize(leftTree->getSize() + 1);
+        Node * newRoot = new Node(maxKey, NULL, NULL, NULL);
+        int newLeftHeight = leftTree->computeHeight();
         
-        Node * newNode = new Node(maxKey, NULL, NULL, NULL, 0);
-        
-        Node * u = NULL;
-        Node * v = rightTree->root;
+        prevNode = NULL;
+        currentNode = rightTree->root;
         int currHeight = rightHeight;
         while (currHeight > newLeftHeight + 1) {
-            if (rightTree->getBalance(v) == 1) {
+            if (currentNode->balance == 1) {
                 currHeight = currHeight - 2;
             }
             else {
                 currHeight = currHeight - 1;
             }
-            u = v;
-            v = v->left;
+            prevNode = currentNode;
+            currentNode = currentNode->left;
+        }
+        Node * oldCurrentNodeParent = prevNode;
+        newRoot->right = currentNode;
+        if ( currentNode != NULL ) {
+            currentNode->parent = newRoot;
         }
         
-        newNode->right = v;
-        if ( v != NULL ) {
-            v->parent = newNode;
-        }
-        newNode->left = leftTree->root;
+        newRoot->left = leftTree->root;
         if (leftTree->root != NULL) {
-            leftTree->root->parent = newNode;
+            leftTree->root->parent = newRoot;
         }   
-        joinedTree->updateHeight(newNode);
-        
-        if ( u == NULL ) {
-            joinedTree->root = newNode;
+        newRoot->balance = currHeight - newLeftHeight;
+        if ( oldCurrentNodeParent == NULL ) {
+            newTree->root = newRoot;
         }
-        else if (u->left == v) {
-            u->left = newNode;
-            newNode->parent = u;
-            joinedTree->root = rightTree->root;
+        else if (oldCurrentNodeParent->left == currentNode) {
+            oldCurrentNodeParent->left = newRoot;
+            newRoot->parent = oldCurrentNodeParent;
+            newTree->root = rightTree->root;
         }
         else {
-            u->right = newNode;
-            newNode->parent = u;
-            joinedTree->root = rightTree->root;
+            oldCurrentNodeParent->right = newRoot;
+            newRoot->parent = oldCurrentNodeParent;
+            newTree->root = rightTree->root;
         }
-        joinedTree->rebalance(u);
+        currentNode = newRoot;
     }
-    return joinedTree;
+    
+    while (prevNode != NULL) {
+        if (prevNode->left == currentNode) {
+            if (prevNode->balance == -1) {
+                Node * leftChild = prevNode->left;
+                if (leftChild->balance == -1) {
+                    newTree->rotateLeft(prevNode);
+                }
+                else {
+                    newTree->rotateDoubleRight(prevNode);
+                }
+                newTree->setSize( leftTree->getSize() + rightTree->getSize());
+                return newTree;
+            }
+            else if (prevNode->balance == 0) {
+                prevNode->balance = -1;
+            }
+            else {
+                prevNode->balance = 0;
+                break;
+            }
+        }
+        else {
+            if (prevNode->balance == 1) {
+                Node * rightChild = prevNode->right;
+                if (rightChild->balance == 1) {
+                    newTree->rotateRight(prevNode);
+                }
+                else {
+                    newTree->rotateDoubleLeft(prevNode);
+                }
+                newTree->setSize(leftTree->getSize() + rightTree->getSize());
+                return newTree;
+            }
+            else if (prevNode->balance == 0) {
+                prevNode->balance = 1;
+            }
+            else {
+                prevNode->balance = 0;
+                break;
+            }
+        }
+        currentNode = prevNode;
+        prevNode = prevNode->parent;
+    }
+    newTree->setSize( leftTree->getSize() + rightTree->getSize());
+    return newTree;
 }
 
 std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
@@ -511,11 +851,11 @@ std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
     int splitKey;
     if (tree->root == NULL) {
         /* empty tree */
-        return std::make_tuple(INVALID_SPLIT_KEY, nullptr, nullptr);
+        return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
     else if (tree->root->left == NULL && tree->root->right == nullptr) {
         /* Tree only has one node */
-        return std::make_tuple(INVALID_SPLIT_KEY, nullptr, nullptr);
+        return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
     else if (tree->root->left == NULL) {
         /* root's left child is NULL, right child is non-NULL */
@@ -557,6 +897,18 @@ std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
 
 }
 
+int AVLTree::getSize() {
+    return size;
+}
+
+void AVLTree::setSize(int size) {
+    this->size = size;
+}
+
+bool AVLTree::isEmpty() {
+    return root == NULL;
+}
+
 int AVLTree::sumKeys(Node * node) {
     if (node == NULL)
         return 0;
@@ -586,22 +938,16 @@ void AVLTree::printInOrderTraversal() {
 
 bool AVLTree::doesAVLHold(Node * node) {
     bool holds = true;
-    
-    if (node->left != NULL)
-        holds *= doesAVLHold(node->left);
-    if (node->right != NULL)
-        holds *= doesAVLHold(node->right);    
-   
-    holds *= abs(getHeight(node->left) - getHeight(node->right)) <= 1 ? true : false;
-    
-    if (holds == false) {
-        cout << "Left Height: " << getHeight(node->left) << endl;
-        //printBFSOrder(node->left);
-        cout << "Right Height: " << getHeight(node->right) << endl;
-        //printBFSOrder(node->right);
+    if ( node != NULL ) {
+        if (node->left != NULL)
+            holds *= doesAVLHold(node->left);
+        if (node->right != NULL)
+            holds *= doesAVLHold(node->right);    
+
+        holds *= abs(node->balance) <= 1 ? true : false;
     }
-    return holds; 
-    
+   
+    return holds;  
 }
 
 bool AVLTree::checkAVL( ) {

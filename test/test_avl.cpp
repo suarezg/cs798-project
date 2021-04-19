@@ -26,25 +26,29 @@
 using namespace std;
 
 bool tree_insert(AVLTree * tree, const int & key) {
-    cout << "Inserting " << key << "..." << endl;
-    return tree->insert(key);
+    cout << "Inserting " << key << "...";
+    bool op = tree->insert(key);
+    cout << boolalpha << op << endl;
+    return op;
 }
 
 bool tree_delete(AVLTree * tree, const int & key) {
-    cout << "Deleting " << key << "..." << endl;
-    return tree->erase(key);
+    cout << "Deleting " << key << "...";
+    bool op = tree->erase(key);
+    cout << boolalpha << op << endl;
+    return op;
 }
 
 void simple_test() {
     AVLTree * tree = new AVLTree();
     
-    assert( tree_insert(tree, 4) ) ;
-    assert( tree_insert(tree, 5) );
+    assert( tree_insert(tree, 5) ) ;
+    assert( tree_insert(tree, 4) );
     assert( tree_insert(tree, 6) );
     assert( tree_insert(tree, 1) );
     assert( tree_insert(tree, 3) );
     assert( tree_insert(tree, 2) );
-    //tree->printInOrderTraversal();
+    tree->printInOrderTraversal();
     tree->printBFSOrder();
     cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
     
@@ -67,6 +71,34 @@ void simple_test() {
     
 }
 
+void test_balance() {
+    AVLTree * tree = new AVLTree();
+    
+    /* Setup tree*/
+    assert( tree_insert(tree, 7) ) ;
+    assert( tree_insert(tree, 2) );
+    assert( tree_insert(tree, 9) );
+    assert( tree_insert(tree, 4) );
+//    assert( tree_insert(tree, 4) );
+//    assert( tree_insert(tree, 7) );
+//    assert( tree_insert(tree, 3) );
+    tree->printInOrderTraversal();
+    tree->printBFSOrder();
+    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    
+    /* Delete */
+//    assert( tree_delete(tree, 2) );
+//    tree->printInOrderTraversal();
+//    tree->printBFSOrder();
+//    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    
+    /* Insert */
+    assert( tree_insert(tree, 5) );
+    tree->printInOrderTraversal();
+    tree->printBFSOrder();
+    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+}
+
 void timed_test(int millis) {
     
     cout << "Timed test duration: " << millis << " ms." << endl;
@@ -78,22 +110,24 @@ void timed_test(int millis) {
     int insertOps = 0;
     int deleteOps = 0;
     
-    const int KEYRANGE = 10000;
+    const int KEYRANGE = 100;
     
     /* PREFILL */
+    cout << "Starting prefill..." << endl;
     for (int i = 0; i < KEYRANGE / 2; i++) {
-        int num = rng->nextNatural() % 10000;
+        int num = rng->nextNatural() % KEYRANGE;
         if ( numbers.count(num) == 0 ) {
-            tree->insert(num);
+            tree_insert(tree, num);
             numbers.insert(num);
             checksum += num;
         }
         assert( tree->checkAVL() );
     }
     
+    cout << "Prefill complete." << endl;
+    tree->printBFSOrder();
     
     /* TEST */
-    
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     uint64_t numOps = 0;
     while ( ( (int) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count()) < millis ) {
@@ -112,6 +146,7 @@ void timed_test(int millis) {
                 // inserted num into set 
                 numbers.insert(num);
                 checksum += num;
+                
             }
                 
             insertOps++;
@@ -135,7 +170,6 @@ void timed_test(int millis) {
                 // deleted num from set
                 numbers.erase(num);
                 checksum -= num;
-                
             }
             deleteOps++;
         }
@@ -144,6 +178,7 @@ void timed_test(int millis) {
             
     }
     
+    cout << "completed operations" << endl;
     
     int avlSum = tree->sumOfKeys();
     string status = avlSum == checksum ? ".OK." : ".ERROR.";
@@ -237,6 +272,7 @@ int main(int argc, char** argv) {
     }
     
     simple_test( );
+    test_balance( );
     timed_test( millisToRun );
     split_join_test( );
     

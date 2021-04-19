@@ -23,7 +23,7 @@ benchmark_debug:
 
 	
 test_avl: build
-	$(GPP) $(FLAGS) -MMD -MP -MF build/$@.d -o $@ test/test_avl.cpp
+	$(GPP) $(FLAGS) -MMD -MP -MF build/$@.d -o $@ test/test_avl.cpp 
 	
 -include $(addprefix build/,$(addsuffix .d, $(PROGRAMS)))
 
