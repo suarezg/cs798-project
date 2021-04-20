@@ -5,10 +5,10 @@
  */
 
 /* 
- * File:   test_avl.cpp
+ * File:   test_linkedlist.cpp
  * Author: ginns
  *
- * Created on March 18, 2021, 9:20 PM
+ * Created on April 19, 2021, 10:25 PM
  */
 
 #include <cstdlib>
@@ -18,92 +18,60 @@
 #include <thread>         // std::this_thread::sleep_for
 #include <string>
 #include <cstring>
-#include "../src/data_structures/avl_tree.h"
+#include "../src/data_structures/linkedlist.h"
 #include "../src/util.h"
 
 #define RANDOM_SEED         28
 
 using namespace std;
 
-bool tree_insert(AVLTree * tree, const int & key) {
+bool list_insert(LinkedList * list, const int & key) {
     cout << "Inserting " << key << "...";
-    bool op = tree->insert(key);
+    bool op = list->insert(key);
     cout << boolalpha << op << endl;
     return op;
 }
 
-bool tree_delete(AVLTree * tree, const int & key) {
+bool list_delete(LinkedList * list, const int & key) {
     cout << "Deleting " << key << "...";
-    bool op = tree->erase(key);
+    bool op = list->erase(key);
     cout << boolalpha << op << endl;
     return op;
 }
 
 void simple_test() {
-    AVLTree * tree = new AVLTree();
+    LinkedList * list = new LinkedList();
     
-    assert( tree_insert(tree, 5) ) ;
-    assert( tree_insert(tree, 4) );
-    assert( tree_insert(tree, 6) );
-    assert( tree_insert(tree, 1) );
-    assert( tree_insert(tree, 3) );
-    assert( tree_insert(tree, 2) );
-    tree->printInOrderTraversal();
-    tree->printBFSOrder();
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    assert( list_insert(list, 5) ) ;
+    assert( list_insert(list, 4) );
+    assert( list_insert(list, 6) );
+    assert( list_insert(list, 1) );
+    assert( list_insert(list, 3) );
+    assert( list_insert(list, 2) );
+    list->printKeys();
+    cout << "Sorted? " << boolalpha << list->checkSortedOrder() << endl;
     
-    assert( !tree_insert(tree, 2) );
-    //tree->printInOrderTraversal();
-    tree->printBFSOrder();
+    assert( !list_insert(list, 2) );
+    list->printKeys();
     
-    assert( tree_delete(tree, 3) );
-    //tree->printInOrderTraversal();
-    tree->printBFSOrder();
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    assert( list_delete(list, 3) );
+    list->printKeys();
+    cout << "Sorted? " << boolalpha << list->checkSortedOrder() << endl;
     
-    assert( !tree_delete(tree, 3) );
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    assert( !list_delete(list, 3) );
+    cout << "Sorted? " << boolalpha << list->checkSortedOrder() << endl;
     
-    assert( tree_delete(tree, 2));
-    //tree->printInOrderTraversal();
-    tree->printBFSOrder();
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
+    assert( list_delete(list, 2));
+    list->printKeys();
+    cout << "Sorted? " << boolalpha << list->checkSortedOrder() << endl;
     
-}
-
-void test_balance() {
-    AVLTree * tree = new AVLTree();
-    
-    /* Setup tree*/
-    assert( tree_insert(tree, 7) ) ;
-    assert( tree_insert(tree, 2) );
-    assert( tree_insert(tree, 9) );
-    assert( tree_insert(tree, 4) );
-//    assert( tree_insert(tree, 4) );
-//    assert( tree_insert(tree, 7) );
-//    assert( tree_insert(tree, 3) );
-    tree->printInOrderTraversal();
-    tree->printBFSOrder();
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
-    
-    /* Delete */
-//    assert( tree_delete(tree, 2) );
-//    tree->printInOrderTraversal();
-//    tree->printBFSOrder();
-//    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
-    
-    /* Insert */
-    assert( tree_insert(tree, 5) );
-    tree->printInOrderTraversal();
-    tree->printBFSOrder();
-    cout << "AVL Property? " << boolalpha << tree->checkAVL() << endl;
 }
 
 void timed_test(int millis) {
     
     cout << "Timed test duration: " << millis << " ms." << endl;
     set<int> numbers;
-    AVLTree * tree = new AVLTree();
+    LinkedList * list = new LinkedList();
     PaddedRandom * rng = new PaddedRandom();
     rng->setSeed(RANDOM_SEED);
     int checksum = 0;
@@ -117,15 +85,15 @@ void timed_test(int millis) {
     for (int i = 0; i < KEYRANGE / 2; i++) {
         int num = rng->nextNatural() % KEYRANGE;
         if ( numbers.count(num) == 0 ) {
-            tree_insert(tree, num);
+            list_insert(list, num);
             numbers.insert(num);
             checksum += num;
         }
-        assert( tree->checkAVL() );
+        assert( list->checkSortedOrder() );
     }
     
     cout << "Prefill complete." << endl;
-    tree->printBFSOrder();
+    list->printKeys();
     
     /* TEST */
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
@@ -133,7 +101,7 @@ void timed_test(int millis) {
     while ( ( (int) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count()) < millis ) {
         int num = rng->nextNatural() % KEYRANGE;
         if ( rng->nextNatural() % 2 == 0) {
-            bool op = tree->insert(num);
+            bool op = list->insert(num);
             bool expected;
             
             /* Check if we've insert num before */
@@ -155,7 +123,7 @@ void timed_test(int millis) {
         else {
             
             
-            bool op = tree->erase(num);
+            bool op = list->erase(num);
             bool expected;
             
             /* Check if we've insert num before */
@@ -174,16 +142,16 @@ void timed_test(int millis) {
             deleteOps++;
         }
         numOps++;
-        assert(tree->checkAVL());
+        assert(list->checkSortedOrder());
             
     }
     
     cout << "completed operations" << endl;
     
-    int avlSum = tree->sumOfKeys();
-    string status = avlSum == checksum ? ".OK." : ".ERROR.";
+    int listSum = list->sumOfKeys();
+    string status = listSum == checksum ? ".OK." : ".ERROR.";
     
-    cout << "AVL Sum: " << avlSum << ". Checksum: " << checksum << status << endl;
+    cout << "List Sum: " << listSum << ". Checksum: " << checksum << status << endl;
     cout << "Number of operations: " << numOps << endl;
     cout << "Insert operations: " << insertOps << endl;
     cout << "Delete operations: " << deleteOps << endl;
@@ -193,57 +161,57 @@ void timed_test(int millis) {
 
 void split_join_test() {
     int MIDPOINT = 10;
-    AVLTree * leftTree = new AVLTree();
-    AVLTree * rightTree = new AVLTree();
+    LinkedList * leftList = new LinkedList();
+    LinkedList * rightList = new LinkedList();
     for (int i = 1; i <= MIDPOINT; i++)
-        leftTree->insert(i);
+        leftList->insert(i);
     
-    cout << "[Left Tree]";
-    leftTree->printBFSOrder();
+    cout << "[Left List]";
+    leftList->printKeys();
     
     for (int i = MIDPOINT + 1; i <= MIDPOINT + 3 ; i++) 
-       rightTree->insert(i);
+       rightList->insert(i);
     
-    cout << "[Right Tree]";
-    rightTree->printBFSOrder();
+    cout << "[Right List]";
+    rightList->printKeys();
     
-    int leftTreeSum = leftTree->sumOfKeys();
-    int rightTreeSum = rightTree->sumOfKeys();
+    int leftListSum = leftList->sumOfKeys();
+    int rightListSum = rightList->sumOfKeys();
     
-    cout << "JOIN TREES\n==========" << endl;
-    AVLTree * joinedTree = AVLTree::join(leftTree, rightTree);
-    assert(joinedTree->checkAVL());
-    joinedTree->printBFSOrder();
+    cout << "JOIN List\n==========" << endl;
+    LinkedList * joinedList = LinkedList::join(leftList, rightList);
+    assert(joinedList->checkSortedOrder());
+    joinedList->printKeys();
     
-    int joinTreeSum = joinedTree->sumOfKeys();
-    assert(joinTreeSum == (leftTreeSum + rightTreeSum));
+    int joinListSum = joinedList->sumOfKeys();
+    assert(joinListSum == (leftListSum + rightListSum));
     
-    cout << "SPLIT TREES\n==========" << endl;
-    std::tuple<int, AVLTree *, AVLTree *> tuple = AVLTree::split(joinedTree);
+    cout << "SPLIT List\n==========" << endl;
+    std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(joinedList);
    
     int splitKey = std::get<0>(tuple);
-    AVLTree * newLeftTree = std::get<1>(tuple);
-    AVLTree * newRightTree = std::get<2>(tuple);
+    LinkedList * newLeftList = std::get<1>(tuple);
+    LinkedList * newRightList = std::get<2>(tuple);
     cout << "Split Key: " << splitKey << endl;
     
-    cout << "[Left Tree]";
-    newLeftTree->printBFSOrder();
-    cout << "[Right Tree]";
-    newRightTree->printBFSOrder();
+    cout << "[Left List]";
+    newLeftList->printKeys();
+    cout << "[Right List]";
+    newRightList->printKeys();
     
-    cout << "Empty tree join" << endl;
-    AVLTree * emptyTree = new AVLTree();
-    std::tuple<int, AVLTree *, AVLTree *> nullTuple = AVLTree::split(emptyTree);
+    cout << "Empty list join" << endl;
+    LinkedList * emptyList = new LinkedList();
+    std::tuple<int, LinkedList *, LinkedList *> nullTuple = LinkedList::split(emptyList);
     int invalidKey = std::get<0>(nullTuple);
-    AVLTree * nullLeft = std::get<1>(nullTuple);
-    AVLTree * nullRight = std::get<2>(nullTuple);
+    LinkedList * nullLeft = std::get<1>(nullTuple);
+    LinkedList * nullRight = std::get<2>(nullTuple);
     assert(invalidKey == -1);
     assert(nullLeft == nullptr);
     assert(nullRight == nullptr);
     
-    AVLTree * joinedWithEmpty = AVLTree::join(emptyTree, newRightTree);
-    joinedWithEmpty->printBFSOrder();
-    assert(joinedWithEmpty->checkAVL());
+    LinkedList * joinedWithEmpty = LinkedList::join(emptyList, newRightList);
+    joinedWithEmpty->printKeys();
+    assert(joinedWithEmpty->checkSortedOrder());
     
 }   
 
@@ -272,12 +240,8 @@ int main(int argc, char** argv) {
     }
     
     simple_test( );
-    test_balance( );
     timed_test( millisToRun );
-    split_join_test( );
-    
-    
+    //split_join_test( );
     
     return 0;
 }
-

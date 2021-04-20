@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "../src/util.h"
-#include "../src/trees/ca_tree.h"
+#include "../src/data_structures/ca_tree.h"
 
 using namespace std;
 
@@ -143,6 +143,7 @@ void runExperiment(int keyRangeSize, int millisToRun, int totalThreads, double i
      * (with 0% insert and 0% delete, we prefill to half full.)
      *  
      */
+    cout<<"Starting Prefill..."<<endl;
     
     g->timerFromStart.startTimer();
     
@@ -173,7 +174,7 @@ void runExperiment(int keyRangeSize, int millisToRun, int totalThreads, double i
     else {
         cout<<"Prefilling skipped for small key range..."<<endl;
     }
-    
+    cout<<"Prefill ended"<<endl;
     /**
      * 
      * RUN EXPERIMENT
