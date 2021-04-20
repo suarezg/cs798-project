@@ -76,7 +76,7 @@ CATree::~CATree() {
 BaseNode * CATree::getBaseNode(const int & key) {
     CA_Node * currNode = root;
     while ( RouteNode * currNodeR = dynamic_cast<RouteNode *>(currNode) ) {
-        if ( currNodeR->getKey() < key ) {
+        if ( key < currNodeR->getKey() ) {
             currNode = currNodeR->getLeft();
         }
         else {
@@ -114,7 +114,7 @@ RouteNode * CATree::parentOf(RouteNode* node) {
     while (currNode != node) {
         RouteNode * currNodeR = dynamic_cast<RouteNode *>(currNode);
         prevNode = currNode;
-        if (currNodeR->getKey() < targetKey)
+        if (targetKey < currNodeR->getKey() )
             currNode = currNodeR->getLeft();
         else
             currNode = currNodeR->getRight();

@@ -182,10 +182,7 @@ void AVLTree::rotateRight(Node * prevNode) {
     /* Single right rotation */
     Node * rightChild = prevNode->right;
     Node * prevNodeParent = prevNode->parent;
-//    printf("\nPrevNode: (key: %d,%p,  left: %p, right: %p)\n", prevNode->key, prevNode, prevNode->left, prevNode->right);
-//    printf("rightChild: (key: %d,%p, left: %p, right: %p)\n", rightChild->key, rightChild, rightChild->left, rightChild->right);
-//    printf("PrevNodeParent: (key: %d,%p, left: %p, right: %p)\n", prevNodeParent->key, prevNodeParent, prevNodeParent->left, prevNodeParent->right);
-//    
+ 
     prevNode->right = rightChild->left;
     if (prevNode->right != NULL) {
         prevNode->right->parent = prevNode;
@@ -204,10 +201,7 @@ void AVLTree::rotateRight(Node * prevNode) {
     }
     rightChild->parent = prevNodeParent;
     rightChild->balance = 0;
-    
-//    printf("\nPrevNode: (key: %d,%p,  left: %p, right: %p)\n", prevNode->key, prevNode, prevNode->left, prevNode->right);
-//    printf("rightChild: (key: %d,%p, left: %p, right: %p)\n", rightChild->key, rightChild, rightChild->left, rightChild->right);
-//    printf("PrevNodeParent: (key: %d,%p, left: %p, right: %p)\n", prevNodeParent->key, prevNodeParent, prevNodeParent->left, prevNodeParent->right);
+   
 }
 
 void AVLTree::rotateDoubleRight(Node * prevNode) {
@@ -456,7 +450,6 @@ bool AVLTree::insert(const int & key) {
     Node * prevNode = NULL;
     Node * currentNode = root;
     bool dirLeft = true;
-    
 
     while (currentNode != NULL) {
         int nodeKey = currentNode->key;
@@ -516,12 +509,7 @@ bool AVLTree::insert(const int & key) {
             if (prevNode->balance == 1) {
                 Node * rightChild = prevNode->right;
                 if (rightChild->balance == 1) {
-//                    printBFSOrder();
-//                    cout << "prevNode key: " << prevNode->key << endl;
-//                    cout << "currentNode key: " << currentNode->key << endl;
-//                    cout << "rotating right" << endl;
                     rotateRight(prevNode);
-                   // printBFSOrder();
                 }
                 else {
                     rotateDoubleLeft(prevNode);
@@ -540,8 +528,7 @@ bool AVLTree::insert(const int & key) {
         prevNode = prevNode->parent;
     }
     
-//    cout << "Inserted key " << key << endl; 
-//    printBFSOrder();
+
     return true;
 }
 
@@ -664,7 +651,6 @@ bool AVLTree::erase(const int & key) {
             }
             else {
                 if (prevNode->left == currentNode) {
-                    //cout << "attempting balance" << endl;
                     continueFix = deleteBalanceLeft(prevNode);
                 }
                 else
@@ -709,8 +695,8 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
         Node * newRoot = new Node(minKey, NULL, NULL, NULL);
         int newRightHeight = rightTree->computeHeight();
         
-        Node * prevNode = NULL;
-        Node * currentNode = leftTree->root;
+        prevNode = NULL;
+        currentNode = leftTree->root;
         int currHeight = leftHeight;
         while (currHeight > newRightHeight + 1) {
             if (currentNode->balance == -1) {
