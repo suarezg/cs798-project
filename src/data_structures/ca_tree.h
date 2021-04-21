@@ -19,6 +19,8 @@
 #include <queue>        /* used in BFS */
 
 
+#define DEBUG_PRINT      0
+
 /*
 template<typename Base, typename T>
 inline bool instanceof(const T*) {
@@ -155,13 +157,14 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
         else {
             LinkedList * baseSet = baseNode->getOrderedSet();
             LinkedList * neighborSet = neighborBase->getOrderedSet();
-            
+
+#if DEBUG_PRINT            
             cout << "[JOIN]";
             cout << "Base Set: ";
             baseSet->printKeys();
             cout << "Neightbor Set: ";
             neighborSet->printKeys();
-
+#endif
             LinkedList * joinedSet = LinkedList::join(baseSet, neighborSet);
                         
             BaseNode * newBase = new BaseNode();
@@ -216,11 +219,12 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             neighborBase->invalidate();
             neighborBase->unlock();
             baseNode->invalidate();
-            
+#if DEBUG_PRINT             
             cout << "Joined Set: ";
             joinedSet->printKeys();
-            
+
             TRACE TPRINT("Executed low contention join");
+#endif
         }
     }
     else { /* Symmetric case */
@@ -237,13 +241,13 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
         else {
             LinkedList * baseSet = baseNode->getOrderedSet();
             LinkedList * neighborSet = neighborBase->getOrderedSet();
-            
+#if DEBUG_PRINT              
             cout << "[JOIN]";
             cout << "Base Set: ";
             baseSet->printKeys();
             cout << "Neightbor Set: ";
             neighborSet->printKeys();
-            
+#endif            
             LinkedList * joinedSet = LinkedList::join(neighborSet, baseSet);
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
@@ -297,11 +301,12 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             neighborBase->invalidate();
             neighborBase->unlock();
             baseNode->invalidate();
-            
+#if DEBUG_PRINT              
             cout << "Joined Set: ";
             joinedSet->printKeys();
             
             TRACE TPRINT("Executed low contention join");
+#endif
         }
     }
 } // end lowContentionJoin
@@ -309,9 +314,12 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
 void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
     LinkedList * baseSet = baseNode->getOrderedSet();
+    
+#if DEBUG_PRINT
     cout << "[SPLIT]";
     cout << "Original List: ";
     baseSet->printKeys();
+#endif
     
     std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(baseSet);
     int splitKey = std::get<0>(tuple);
@@ -329,12 +337,12 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     newLeftBase->setOrderedSet(leftSet);
     newRightBase->setOrderedSet(rightSet);
     
-    
+#if DEBUG_PRINT
     cout << "Left List: ";
     leftSet->printKeys();
     cout << "Right List: ";
     rightSet->printKeys();
-    
+#endif
     RouteNode * newRoute = new RouteNode(splitKey, newLeftBase, newRightBase);
     newLeftBase->setParent(newRoute);
     newRightBase->setParent(newRoute);
@@ -352,7 +360,9 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
         }
     }
     baseNode->invalidate();
-    TRACE TPRINT("Executed high contention split, splitKey: " << splitKey);        
+#if DEBUG_PRINT
+    TRACE TPRINT("Executed high contention split, splitKey: " << splitKey);   
+#endif
 } // end highContentionSplit
 
 
