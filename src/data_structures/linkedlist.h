@@ -210,19 +210,27 @@ bool LinkedList::checkSortedOrder() {
 }
 
 LinkedList * LinkedList::join(LinkedList * leftList, LinkedList * rightList) {
-    if ( leftList->isEmpty() && rightList->isEmpty() ) {
-        return NULL;
+        
+    LinkedList * newList = new LinkedList();
+    
+    /* Check if left list has keys */
+    if (leftList->isEmpty()) {
+        newList->head = rightList->head;
+        newList->tail = rightList->tail;
+        newList->size = leftList->getSize() + rightList->getSize();
+        return newList;
     }
-    else if (leftList->isEmpty()) {
-        return rightList;
-    }
-    else if (rightList->isEmpty()) {
-        return leftList;
+    
+    /* Check if right list has keys */
+    if ( rightList->isEmpty() ) {
+        newList->head = leftList->head;
+        newList->tail = leftList->tail;
+        newList->size = newList->size = leftList->getSize() + rightList->getSize();
+        return newList;
     }
     
     assert(leftList->tail->key < rightList->head->key);
     
-    LinkedList * newList = new LinkedList();
     newList->head = leftList->head;
     newList->tail = rightList->tail;
     leftList->tail->next = rightList->head;

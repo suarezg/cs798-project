@@ -42,7 +42,7 @@ private:
     /* Helpers */
     BaseNode * getBaseNode(const int & key);
     BaseNode * leftmostBaseNode(CA_Node * node);
-    BaseNode * rightMostBaseNode(CA_Node * node);
+    BaseNode * rightmostBaseNode(CA_Node * node);
     RouteNode * parentOf(RouteNode * node);
     
     long calcSubtreeKeySum(CA_Node * node);
@@ -97,7 +97,7 @@ BaseNode * CATree::leftmostBaseNode(CA_Node * node) {
     return baseNode;
 }
 
-BaseNode * CATree::rightMostBaseNode(CA_Node* node) {
+BaseNode * CATree::rightmostBaseNode(CA_Node* node) {
     CA_Node * currNode = node;
     while ( RouteNode * r = dynamic_cast<RouteNode *>(currNode) ) {
         currNode = r->getRight();
@@ -155,14 +155,15 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
         else {
             LinkedList * baseSet = baseNode->getOrderedSet();
             LinkedList * neighborSet = neighborBase->getOrderedSet();
-            LinkedList * joinedSet = LinkedList::join(baseSet, neighborSet);
             
-            TRACE TPRINT("[JOIN]");
-            TRACE TPRINT("Base Set: ");
+            cout << "[JOIN]";
+            cout << "Base Set: ";
             baseSet->printKeys();
-            TRACE TPRINT("Neightbor Set: ");
+            cout << "Neightbor Set: ";
             neighborSet->printKeys();
-            
+
+            LinkedList * joinedSet = LinkedList::join(baseSet, neighborSet);
+                        
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
             parent->lock();
@@ -216,14 +217,14 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             neighborBase->unlock();
             baseNode->invalidate();
             
-            TRACE TPRINT("Joined Set: ");
+            cout << "Joined Set: ";
             joinedSet->printKeys();
             
             TRACE TPRINT("Executed low contention join");
         }
     }
     else { /* Symmetric case */
-        BaseNode * neighborBase = leftmostBaseNode( parent->getLeft() );
+        BaseNode * neighborBase = rightmostBaseNode( parent->getLeft() );
         if ( !neighborBase->tryLock() ){
             baseNode->resetStatistics();
             return;
@@ -236,6 +237,13 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
         else {
             LinkedList * baseSet = baseNode->getOrderedSet();
             LinkedList * neighborSet = neighborBase->getOrderedSet();
+            
+            cout << "[JOIN]";
+            cout << "Base Set: ";
+            baseSet->printKeys();
+            cout << "Neightbor Set: ";
+            neighborSet->printKeys();
+            
             LinkedList * joinedSet = LinkedList::join(neighborSet, baseSet);
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
@@ -290,6 +298,9 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             neighborBase->unlock();
             baseNode->invalidate();
             
+            cout << "Joined Set: ";
+            joinedSet->printKeys();
+            
             TRACE TPRINT("Executed low contention join");
         }
     }
@@ -298,8 +309,8 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
 void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
     LinkedList * baseSet = baseNode->getOrderedSet();
-    TRACE TPRINT("[SPLIT]");
-    TRACE TPRINT("Original List:");
+    cout << "[SPLIT]";
+    cout << "Original List: ";
     baseSet->printKeys();
     
     std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(baseSet);
@@ -308,7 +319,7 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     LinkedList * rightSet = std::get<2>(tuple);
     
     if (leftSet == nullptr) {
-        /* Occurs when split is not possible (one node set) */
+        /* Occurs when split is not possible (e.g. one node set) */
         baseNode->resetStatistics();
         return;
     }
@@ -319,9 +330,9 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     newRightBase->setOrderedSet(rightSet);
     
     
-    TRACE TPRINT("Left List:");
+    cout << "Left List: ";
     leftSet->printKeys();
-    TRACE TPRINT("Right List:");
+    cout << "Right List: ";
     rightSet->printKeys();
     
     RouteNode * newRoute = new RouteNode(splitKey, newLeftBase, newRightBase);
@@ -392,9 +403,8 @@ bool CATree::contains(int tid, const int & key) {
 
 bool CATree::insert(int tid, const int & key) {
     assert( (key >= minKey) && (key <= maxKey) );
-    //TRACE TPRINT("Inserting key: " << key);
+    
     while (true) {
-        //TRACE TPRINT("Inserting key: " << key);
         bool result;
         BaseNode * baseNode = getBaseNode(key);
         baseNode->lock();
@@ -404,14 +414,7 @@ bool CATree::insert(int tid, const int & key) {
             continue;
         }
         LinkedList * set = baseNode->getOrderedSet();
-        result = set->insert(key);
-        if (result) {
-            TRACE TPRINT("Inserted key " << key);
-        }
-        else {
-            TRACE TPRINT("Failed to insert key " << key);
-        }
-        
+        result = set->insert(key);        
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
         return result;
