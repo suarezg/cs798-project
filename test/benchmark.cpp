@@ -8,6 +8,7 @@
 
 #include "../src/util.h"
 #include "../src/data_structures/ca_tree.h"
+#include "../src/data_structures/interfaces.h"
 
 using namespace std;
 
@@ -126,11 +127,11 @@ void runTrial(auto g, const long millisToRun, double insertPercent, double delet
 }
 
 template <class DataStructureType>
-void runExperiment(int keyRangeSize, int millisToRun, int totalThreads, double insertPercent, double deletePercent) {
+void runExperiment(OrderedSetType setType, int keyRangeSize, int millisToRun, int totalThreads, double insertPercent, double deletePercent) {
     // create globals struct that all threads will access (with padding to prevent false sharing on control logic meta data)
     int minKey = 0;
     int maxKey = keyRangeSize;
-    auto dataStructure = new DataStructureType(totalThreads, minKey, maxKey);
+    auto dataStructure = new DataStructureType(totalThreads, minKey, maxKey, setType);
     auto g = new globals_t<DataStructureType>(millisToRun, totalThreads, keyRangeSize, dataStructure);
     
     /**
@@ -223,6 +224,7 @@ int main(int argc, char** argv) {
     if (argc == 1) {
         cout<<"USAGE: "<<argv[0]<<" [options]"<<endl;
         cout<<"Options:"<<endl;
+        cout<<"    -o  [string]   [o]rdered set type name in { A = AVL, L = LinkedList }"<<endl;
         cout<<"    -t [int]     milliseconds to run"<<endl;
         cout<<"    -s [int]     size of the key range that random keys will be drawn from (i.e., range [1, s])"<<endl;
         cout<<"    -n [int]     number of threads that will perform inserts and deletes"<<endl;
@@ -238,6 +240,7 @@ int main(int argc, char** argv) {
     int totalThreads = 0;
     double insertPercent = 0;
     double deletePercent = 0;
+    char * setType = NULL;
     
         // read command line args
     for (int i=1;i<argc;++i) {
@@ -251,6 +254,8 @@ int main(int argc, char** argv) {
             insertPercent = atof(argv[++i]);
         } else if (strcmp(argv[i], "-d") == 0) {
             deletePercent = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-o") == 0) {
+            setType = argv[++i];
         } else {
             cout<<"bad arguments"<<endl;
             exit(1);
@@ -271,6 +276,7 @@ int main(int argc, char** argv) {
     PRINT(insertPercent);
     PRINT(deletePercent);
     PRINT(millisToRun);
+    PRINT(setType);
     cout<<endl;
     
     // check for too large thread count
@@ -279,8 +285,19 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    runExperiment<CATree>(keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
+    if (!strcmp(setType, "A")) {
+        runExperiment<CATree>(OrderedSetType::AVL, keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
     
+    }
+    else if (!strcmp(setType, "L")) {
+        runExperiment<CATree>(OrderedSetType::LINKEDLIST, keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
+    }
+    else {
+        cout<<"Bad ordered set type: "<<setType<<endl;
+        return 1;
+    }
+    
+
     return 0;
 }
 

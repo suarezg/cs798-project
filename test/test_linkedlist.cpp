@@ -181,7 +181,8 @@ void split_join_test() {
     int rightListSum = rightList->sumOfKeys();
     
     cout << "JOIN List\n==========" << endl;
-    LinkedList * joinedList = leftList->join(rightList);
+    IOrderedSet * joinedSet = leftList->join(rightList);
+    LinkedList * joinedList = static_cast<LinkedList *>(joinedSet);
     assert(joinedList->checkSortedOrder());
     joinedList->printKeys();
     cout << "Size: " << joinedList->getSize() << endl;
@@ -190,11 +191,13 @@ void split_join_test() {
     assert(joinListSum == (leftListSum + rightListSum));
     
     cout << "SPLIT List\n==========" << endl;
-    std::tuple<int, LinkedList *, LinkedList *> tuple = joinedList->split();
+    std::tuple<int, IOrderedSet *, IOrderedSet *> tuple = joinedList->split();
    
     int splitKey = std::get<0>(tuple);
-    LinkedList * newLeftList = std::get<1>(tuple);
-    LinkedList * newRightList = std::get<2>(tuple);
+    IOrderedSet * newLeftSet = std::get<1>(tuple);
+    IOrderedSet * newRightSet = std::get<2>(tuple);
+    LinkedList * newLeftList = static_cast<LinkedList *>(newLeftSet);
+    LinkedList * newRightList = static_cast<LinkedList *>(newRightSet);
     cout << "Split Key: " << splitKey << endl;
     
     cout << "[Left List]";
@@ -206,16 +209,18 @@ void split_join_test() {
     
     cout << "Empty list join" << endl;
     LinkedList * emptyList = new LinkedList();
-    std::tuple<int, LinkedList *, LinkedList *> nullTuple = emptyList->split();
+    std::tuple<int, IOrderedSet *, IOrderedSet *> nullTuple = emptyList->split();
     int invalidKey = std::get<0>(nullTuple);
-    LinkedList * nullLeft = std::get<1>(nullTuple);
-    LinkedList * nullRight = std::get<2>(nullTuple);
+    IOrderedSet * nullLeft = std::get<1>(nullTuple);
+    IOrderedSet * nullRight = std::get<2>(nullTuple);
     assert(invalidKey == -1);
     assert(nullLeft == nullptr);
     assert(nullRight == nullptr);
     
-    LinkedList * joinedWithEmpty = emptyList->join(newRightList);
+    IOrderedSet * joinedWithEmptySet = emptyList->join(newRightList);
+    LinkedList * joinedWithEmpty = static_cast<LinkedList *>(joinedWithEmptySet);
     joinedWithEmpty->printKeys();
+    
     cout << "Size: " << joinedWithEmpty->getSize() << endl;
     assert(joinedWithEmpty->checkSortedOrder());
     

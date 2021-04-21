@@ -211,7 +211,8 @@ void split_join_test() {
     int rightTreeSum = rightTree->sumOfKeys();
     
     cout << "JOIN TREES\n==========" << endl;
-    AVLTree * joinedTree = leftTree->join(rightTree);
+    IOrderedSet * joinedSet = leftTree->join(rightTree);
+    AVLTree * joinedTree = static_cast<AVLTree *>(joinedSet);
     assert(joinedTree->checkAVL());
     joinedTree->printBFSOrder();
     
@@ -219,11 +220,14 @@ void split_join_test() {
     assert(joinTreeSum == (leftTreeSum + rightTreeSum));
     
     cout << "SPLIT TREES\n==========" << endl;
-    std::tuple<int, AVLTree *, AVLTree *> tuple = joinedTree->split();
+    std::tuple<int, IOrderedSet *, IOrderedSet *> tuple = joinedTree->split();
    
     int splitKey = std::get<0>(tuple);
-    AVLTree * newLeftTree = std::get<1>(tuple);
-    AVLTree * newRightTree = std::get<2>(tuple);
+    IOrderedSet * newLeftSet = std::get<1>(tuple);
+    IOrderedSet * newRightSet = std::get<2>(tuple);
+    AVLTree * newLeftTree = static_cast<AVLTree *>(newLeftSet);
+    AVLTree * newRightTree = static_cast<AVLTree *>(newRightSet);
+    
     cout << "Split Key: " << splitKey << endl;
     
     cout << "[Left Tree]";
@@ -233,15 +237,16 @@ void split_join_test() {
     
     cout << "Empty tree join" << endl;
     AVLTree * emptyTree = new AVLTree();
-    std::tuple<int, AVLTree *, AVLTree *> nullTuple = emptyTree->split();
+    std::tuple<int, IOrderedSet *, IOrderedSet *> nullTuple = emptyTree->split();
     int invalidKey = std::get<0>(nullTuple);
-    AVLTree * nullLeft = std::get<1>(nullTuple);
-    AVLTree * nullRight = std::get<2>(nullTuple);
+    IOrderedSet * nullLeft = std::get<1>(nullTuple);
+    IOrderedSet * nullRight = std::get<2>(nullTuple);
     assert(invalidKey == -1);
     assert(nullLeft == nullptr);
     assert(nullRight == nullptr);
     
-    AVLTree * joinedWithEmpty = emptyTree->join(newRightTree);
+    IOrderedSet * joinedWithEmptySet = emptyTree->join(newRightTree);
+    AVLTree * joinedWithEmpty = static_cast<AVLTree *>(joinedWithEmptySet);
     joinedWithEmpty->printBFSOrder();
     assert(joinedWithEmpty->checkAVL());
     

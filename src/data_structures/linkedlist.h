@@ -16,11 +16,13 @@
 #include <cassert>
 #include <iostream>
 
+#include "interfaces.h"
+
 #define INVALID_KEY     -1
 
 
 using namespace std;
-class LinkedList {
+class LinkedList : public IOrderedSet {
 private:
     struct Node {
         int key;
@@ -46,8 +48,8 @@ public:
     bool erase(const int & key);
     
     /* */
-    LinkedList * join(LinkedList * rightList);
-    std::tuple<int, LinkedList *, LinkedList *> split();
+    IOrderedSet * join(IOrderedSet * rightList);
+    std::tuple<int, IOrderedSet *, IOrderedSet *> split();
     
     int getSize();
     bool isEmpty();
@@ -209,8 +211,13 @@ bool LinkedList::checkSortedOrder() {
     return sorted;
 }
 
-LinkedList * LinkedList::join(LinkedList * rightList) {
+IOrderedSet * LinkedList::join(IOrderedSet * rightSet) {
         
+    LinkedList * rightList;
+    if ( (rightList = dynamic_cast<LinkedList *>(rightSet)) == nullptr ) {
+        assert(false); /* incorrect type */
+    }
+    
     LinkedList * newList = new LinkedList();
     LinkedList * leftList = this;
     
@@ -240,7 +247,7 @@ LinkedList * LinkedList::join(LinkedList * rightList) {
 }
 
 
-std::tuple<int, LinkedList *, LinkedList *> LinkedList::split() {
+std::tuple<int, IOrderedSet *, IOrderedSet *> LinkedList::split() {
     
     if ( isEmpty() ) {
         return std::make_tuple(INVALID_KEY, nullptr, nullptr);

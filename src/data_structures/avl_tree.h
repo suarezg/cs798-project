@@ -23,7 +23,7 @@
 
 /* Sequential AVL Tree */
 using namespace std;
-class AVLTree : public IBinarySearchTree {
+class AVLTree : public IOrderedSet {
 private:
     struct Node {
         int key;
@@ -75,8 +75,8 @@ public:
     virtual bool erase(const int & key);
     
     /* Set operations */
-    AVLTree * join(AVLTree * rightTree);
-    std::tuple<int, AVLTree *, AVLTree *> split();
+    IOrderedSet * join(IOrderedSet * rightTree);
+    std::tuple<int, IOrderedSet *, IOrderedSet *> split();
     
     /* Useful methods */
     int getSize();
@@ -662,8 +662,13 @@ bool AVLTree::erase(const int & key) {
 }
 
 
-AVLTree * AVLTree::join(AVLTree * rightTree) {
+IOrderedSet * AVLTree::join(IOrderedSet * rightSet) {
     /* Assumption: rightTree's smallest key > this tree's largest key */
+    AVLTree * rightTree;
+    if ( (rightTree = dynamic_cast<AVLTree *>(rightSet)) == nullptr ) {
+        assert(false); /* incorrect type */
+    }
+    
     AVLTree * newTree = new AVLTree();
     Node * prevNode = NULL;
     Node * currentNode = NULL;
@@ -833,7 +838,7 @@ AVLTree * AVLTree::join(AVLTree * rightTree) {
     return newTree;
 }
 
-std::tuple<int, AVLTree *, AVLTree *> AVLTree::split() {
+std::tuple<int, IOrderedSet *, IOrderedSet *> AVLTree::split() {
     Node * leftRoot = NULL;
     Node * rightRoot = NULL;
     
