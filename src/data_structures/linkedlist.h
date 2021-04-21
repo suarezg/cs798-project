@@ -108,7 +108,6 @@ bool LinkedList::insert(const int & key) {
             return false; // key already present
         
         /* Insert key into list */
-        size++;
         Node * newNode = new Node(key, curr);
         
         if (prev == NULL) {
@@ -121,7 +120,7 @@ bool LinkedList::insert(const int & key) {
                 tail = newNode;
         }
     }
-    
+    size++;
     return true;
 }
 
@@ -141,7 +140,7 @@ bool LinkedList::erase(const int& key) {
             return false; // key not in list
         
         /* Delete key from list */
-        size--;
+        
         assert(curr->key == key);
         
         if ( prev == NULL ) {
@@ -163,6 +162,7 @@ bool LinkedList::erase(const int& key) {
         delete curr;
         
     }
+    size--;
     return true;
 }
 
@@ -258,14 +258,17 @@ std::tuple<int, LinkedList *, LinkedList *> LinkedList::split(LinkedList * list)
 
     leftList->head = list->head;
     leftList->tail = prev;
+    leftList->tail->next = NULL;
     leftList->size = splitPoint;
 
     rightList->head = curr;
     rightList->tail = list->tail;
     rightList->size = origSize - splitPoint;
 
+    assert(leftList->tail->next == NULL);
+    assert(rightList->tail->next == NULL);
+    
     return std::make_tuple(splitKey, leftList, rightList); 
-                  
 }
 
 

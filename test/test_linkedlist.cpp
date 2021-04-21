@@ -168,12 +168,14 @@ void split_join_test() {
     
     cout << "[Left List]";
     leftList->printKeys();
+    cout << "Size: " << leftList->getSize() << endl;
     
     for (int i = MIDPOINT + 1; i <= MIDPOINT + 3 ; i++) 
        rightList->insert(i);
     
     cout << "[Right List]";
     rightList->printKeys();
+    cout << "Size: " << rightList->getSize() << endl;
     
     int leftListSum = leftList->sumOfKeys();
     int rightListSum = rightList->sumOfKeys();
@@ -182,6 +184,7 @@ void split_join_test() {
     LinkedList * joinedList = LinkedList::join(leftList, rightList);
     assert(joinedList->checkSortedOrder());
     joinedList->printKeys();
+    cout << "Size: " << joinedList->getSize() << endl;
     
     int joinListSum = joinedList->sumOfKeys();
     assert(joinListSum == (leftListSum + rightListSum));
@@ -196,8 +199,10 @@ void split_join_test() {
     
     cout << "[Left List]";
     newLeftList->printKeys();
+    cout << "Size: " << newLeftList->getSize() << endl;
     cout << "[Right List]";
     newRightList->printKeys();
+    cout << "Size: " << newRightList->getSize() << endl;
     
     cout << "Empty list join" << endl;
     LinkedList * emptyList = new LinkedList();
@@ -211,6 +216,7 @@ void split_join_test() {
     
     LinkedList * joinedWithEmpty = LinkedList::join(emptyList, newRightList);
     joinedWithEmpty->printKeys();
+    cout << "Size: " << joinedWithEmpty->getSize() << endl;
     assert(joinedWithEmpty->checkSortedOrder());
     
 }   
@@ -241,7 +247,7 @@ int main(int argc, char** argv) {
     
     simple_test( );
     timed_test( millisToRun );
-    //split_join_test( );
+    split_join_test( );
     
     return 0;
 }

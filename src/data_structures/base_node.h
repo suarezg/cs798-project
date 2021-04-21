@@ -16,6 +16,7 @@
 
 #include "route_node.h"
 #include "avl_tree.h"
+#include "linkedlist.h"
 
 class BaseNode : public CA_Node {
 private:
@@ -24,7 +25,7 @@ private:
     bool valid;
     //int size = 0;
     RouteNode * parent;
-    AVLTree * set; /* TODO replace with IBinarySearchTree interface */
+    LinkedList * set; /* TODO replace with IBinarySearchTree interface */
     
     /* For statistic locking */
     std::mutex m;
@@ -59,8 +60,8 @@ public:
     bool isLowContentionLimitReached();
     
     /* */
-    void setOrderedSet(AVLTree * set);
-    AVLTree * getOrderedSet();
+    void setOrderedSet(LinkedList * set);
+    LinkedList * getOrderedSet();
 };
 
 BaseNode::BaseNode() {
@@ -81,11 +82,11 @@ RouteNode * BaseNode::getParent() {
     return parent;
 }
 
-void BaseNode::setOrderedSet(AVLTree * set) {
+void BaseNode::setOrderedSet(LinkedList * set) {
     this->set = set;
 }
 
-AVLTree * BaseNode::getOrderedSet() {
+LinkedList * BaseNode::getOrderedSet() {
     return set;
 }
 

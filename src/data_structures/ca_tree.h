@@ -63,8 +63,8 @@ public:
 
 CATree::CATree(int _numThreads, int _minKey, int _maxKey) : numThreads(_numThreads), minKey(_minKey), maxKey(_maxKey) {
     BaseNode * baseRoot = new BaseNode();
-    AVLTree * tree = new AVLTree();
-    baseRoot->setOrderedSet(tree);
+    LinkedList * list = new LinkedList();
+    baseRoot->setOrderedSet(list);
     root = baseRoot;
 }
 
@@ -153,9 +153,16 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             return;
         }
         else {
-            AVLTree * baseSet = baseNode->getOrderedSet();
-            AVLTree * neighborSet = neighborBase->getOrderedSet();
-            AVLTree * joinedSet = AVLTree::join(baseSet, neighborSet);
+            LinkedList * baseSet = baseNode->getOrderedSet();
+            LinkedList * neighborSet = neighborBase->getOrderedSet();
+            LinkedList * joinedSet = LinkedList::join(baseSet, neighborSet);
+            
+            TRACE TPRINT("[JOIN]");
+            TRACE TPRINT("Base Set: ");
+            baseSet->printKeys();
+            TRACE TPRINT("Neightbor Set: ");
+            neighborSet->printKeys();
+            
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
             parent->lock();
@@ -209,6 +216,9 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             neighborBase->unlock();
             baseNode->invalidate();
             
+            TRACE TPRINT("Joined Set: ");
+            joinedSet->printKeys();
+            
             TRACE TPRINT("Executed low contention join");
         }
     }
@@ -224,9 +234,9 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             return;
         }
         else {
-            AVLTree * baseSet = baseNode->getOrderedSet();
-            AVLTree * neighborSet = neighborBase->getOrderedSet();
-            AVLTree * joinedSet = AVLTree::join(neighborSet, baseSet);
+            LinkedList * baseSet = baseNode->getOrderedSet();
+            LinkedList * neighborSet = neighborBase->getOrderedSet();
+            LinkedList * joinedSet = LinkedList::join(neighborSet, baseSet);
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
             parent->lock();
@@ -287,13 +297,17 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
 
 void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
-    AVLTree * baseSet = baseNode->getOrderedSet();
-    std::tuple<int, AVLTree *, AVLTree *> tuple = AVLTree::split(baseSet);
-    int splitKey = std::get<0>(tuple);
-    AVLTree * leftTree = std::get<1>(tuple);
-    AVLTree * rightTree = std::get<1>(tuple);
+    LinkedList * baseSet = baseNode->getOrderedSet();
+    TRACE TPRINT("[SPLIT]");
+    TRACE TPRINT("Original List:");
+    baseSet->printKeys();
     
-    if (leftTree == nullptr) {
+    std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(baseSet);
+    int splitKey = std::get<0>(tuple);
+    LinkedList * leftSet = std::get<1>(tuple);
+    LinkedList * rightSet = std::get<2>(tuple);
+    
+    if (leftSet == nullptr) {
         /* Occurs when split is not possible (one node set) */
         baseNode->resetStatistics();
         return;
@@ -301,10 +315,19 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     
     BaseNode * newLeftBase = new BaseNode();
     BaseNode * newRightBase = new BaseNode();
-    newLeftBase->setOrderedSet(leftTree);
-    newRightBase->setOrderedSet(rightTree);
+    newLeftBase->setOrderedSet(leftSet);
+    newRightBase->setOrderedSet(rightSet);
+    
+    
+    TRACE TPRINT("Left List:");
+    leftSet->printKeys();
+    TRACE TPRINT("Right List:");
+    rightSet->printKeys();
     
     RouteNode * newRoute = new RouteNode(splitKey, newLeftBase, newRightBase);
+    newLeftBase->setParent(newRoute);
+    newRightBase->setParent(newRoute);
+    
     
     if ( parent == NULL ) {
         root = newRoute;
@@ -359,7 +382,7 @@ bool CATree::contains(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        AVLTree * set = baseNode->getOrderedSet();
+        LinkedList * set = baseNode->getOrderedSet();
         result = set->contains(key);
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
@@ -380,7 +403,7 @@ bool CATree::insert(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        AVLTree * set = baseNode->getOrderedSet();
+        LinkedList * set = baseNode->getOrderedSet();
         result = set->insert(key);
         if (result) {
             TRACE TPRINT("Inserted key " << key);
@@ -406,7 +429,7 @@ bool CATree::erase(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        AVLTree * set = baseNode->getOrderedSet();
+        LinkedList * set = baseNode->getOrderedSet();
         result = set->erase(key);
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
