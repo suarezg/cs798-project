@@ -10,7 +10,7 @@ duration=$1
 trials=$2
 
 
-
+#allThreads=(2)
 allThreads=(1 2 4 8 16)
 keyRange=(100 10000)
 # Workload

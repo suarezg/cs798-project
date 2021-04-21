@@ -211,7 +211,7 @@ void split_join_test() {
     int rightTreeSum = rightTree->sumOfKeys();
     
     cout << "JOIN TREES\n==========" << endl;
-    AVLTree * joinedTree = AVLTree::join(leftTree, rightTree);
+    AVLTree * joinedTree = leftTree->join(rightTree);
     assert(joinedTree->checkAVL());
     joinedTree->printBFSOrder();
     
@@ -219,7 +219,7 @@ void split_join_test() {
     assert(joinTreeSum == (leftTreeSum + rightTreeSum));
     
     cout << "SPLIT TREES\n==========" << endl;
-    std::tuple<int, AVLTree *, AVLTree *> tuple = AVLTree::split(joinedTree);
+    std::tuple<int, AVLTree *, AVLTree *> tuple = joinedTree->split();
    
     int splitKey = std::get<0>(tuple);
     AVLTree * newLeftTree = std::get<1>(tuple);
@@ -233,7 +233,7 @@ void split_join_test() {
     
     cout << "Empty tree join" << endl;
     AVLTree * emptyTree = new AVLTree();
-    std::tuple<int, AVLTree *, AVLTree *> nullTuple = AVLTree::split(emptyTree);
+    std::tuple<int, AVLTree *, AVLTree *> nullTuple = emptyTree->split();
     int invalidKey = std::get<0>(nullTuple);
     AVLTree * nullLeft = std::get<1>(nullTuple);
     AVLTree * nullRight = std::get<2>(nullTuple);
@@ -241,7 +241,7 @@ void split_join_test() {
     assert(nullLeft == nullptr);
     assert(nullRight == nullptr);
     
-    AVLTree * joinedWithEmpty = AVLTree::join(emptyTree, newRightTree);
+    AVLTree * joinedWithEmpty = emptyTree->join(newRightTree);
     joinedWithEmpty->printBFSOrder();
     assert(joinedWithEmpty->checkAVL());
     

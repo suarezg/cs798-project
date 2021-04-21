@@ -65,7 +65,7 @@ public:
 
 CATree::CATree(int _numThreads, int _minKey, int _maxKey) : numThreads(_numThreads), minKey(_minKey), maxKey(_maxKey) {
     BaseNode * baseRoot = new BaseNode();
-    LinkedList * list = new LinkedList();
+    AVLTree * list = new AVLTree();
     baseRoot->setOrderedSet(list);
     root = baseRoot;
 }
@@ -155,8 +155,8 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             return;
         }
         else {
-            LinkedList * baseSet = baseNode->getOrderedSet();
-            LinkedList * neighborSet = neighborBase->getOrderedSet();
+            AVLTree * baseSet = baseNode->getOrderedSet();
+            AVLTree * neighborSet = neighborBase->getOrderedSet();
 
 #if DEBUG_PRINT            
             cout << "[JOIN]";
@@ -165,7 +165,7 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             cout << "Neightbor Set: ";
             neighborSet->printKeys();
 #endif
-            LinkedList * joinedSet = LinkedList::join(baseSet, neighborSet);
+            AVLTree * joinedSet = baseSet->join(neighborSet);
                         
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
@@ -239,8 +239,8 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             return;
         }
         else {
-            LinkedList * baseSet = baseNode->getOrderedSet();
-            LinkedList * neighborSet = neighborBase->getOrderedSet();
+            AVLTree * baseSet = baseNode->getOrderedSet();
+            AVLTree * neighborSet = neighborBase->getOrderedSet();
 #if DEBUG_PRINT              
             cout << "[JOIN]";
             cout << "Base Set: ";
@@ -248,7 +248,7 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
             cout << "Neightbor Set: ";
             neighborSet->printKeys();
 #endif            
-            LinkedList * joinedSet = LinkedList::join(neighborSet, baseSet);
+            AVLTree * joinedSet = neighborSet->join(baseSet);
             BaseNode * newBase = new BaseNode();
             newBase->setOrderedSet(joinedSet);
             parent->lock();
@@ -313,7 +313,7 @@ void CATree::lowContentionJoin(int tid, BaseNode * baseNode) {
 
 void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     RouteNode * parent = baseNode->getParent();
-    LinkedList * baseSet = baseNode->getOrderedSet();
+    AVLTree * baseSet = baseNode->getOrderedSet();
     
 #if DEBUG_PRINT
     cout << "[SPLIT]";
@@ -321,10 +321,10 @@ void CATree::highContentionSplit(int tid, BaseNode * baseNode) {
     baseSet->printKeys();
 #endif
     
-    std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(baseSet);
+    std::tuple<int, AVLTree *, AVLTree *> tuple = baseSet->split();
     int splitKey = std::get<0>(tuple);
-    LinkedList * leftSet = std::get<1>(tuple);
-    LinkedList * rightSet = std::get<2>(tuple);
+    AVLTree * leftSet = std::get<1>(tuple);
+    AVLTree * rightSet = std::get<2>(tuple);
     
     if (leftSet == nullptr) {
         /* Occurs when split is not possible (e.g. one node set) */
@@ -403,7 +403,7 @@ bool CATree::contains(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        LinkedList * set = baseNode->getOrderedSet();
+        AVLTree * set = baseNode->getOrderedSet();
         result = set->contains(key);
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
@@ -423,7 +423,7 @@ bool CATree::insert(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        LinkedList * set = baseNode->getOrderedSet();
+        AVLTree * set = baseNode->getOrderedSet();
         result = set->insert(key);        
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();
@@ -442,7 +442,7 @@ bool CATree::erase(int tid, const int & key) {
             baseNode->unlock();
             continue;
         }
-        LinkedList * set = baseNode->getOrderedSet();
+        AVLTree * set = baseNode->getOrderedSet();
         result = set->erase(key);
         adaptIfNeeded(tid, baseNode);
         baseNode->unlock();

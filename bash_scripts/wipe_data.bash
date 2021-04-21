@@ -8,6 +8,7 @@
 
 cd ..
 
+
 rm -rf data  # delete data folder
 
 cd bash_scripts

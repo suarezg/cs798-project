@@ -75,12 +75,11 @@ public:
     virtual bool erase(const int & key);
     
     /* Set operations */
-    static AVLTree * join(AVLTree * leftTree, AVLTree * rightTree);
-    static std::tuple<int, AVLTree *, AVLTree *> split(AVLTree * tree);
+    AVLTree * join(AVLTree * rightTree);
+    std::tuple<int, AVLTree *, AVLTree *> split();
     
     /* Useful methods */
     int getSize();
-    void setSize(int size);
     bool isEmpty();
     
     /* Debugging methods */
@@ -650,9 +649,8 @@ bool AVLTree::erase(const int & key) {
                     continueFix = deleteBalanceRight(prevNode);
             }
             else {
-                if (prevNode->left == currentNode) {
+                if (prevNode->left == currentNode) 
                     continueFix = deleteBalanceLeft(prevNode);
-                }
                 else
                     continueFix = deleteBalanceRight(prevNode);
             }
@@ -664,23 +662,25 @@ bool AVLTree::erase(const int & key) {
 }
 
 
-AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
+AVLTree * AVLTree::join(AVLTree * rightTree) {
     /* Assumption: rightTree's smallest key > this tree's largest key */
     AVLTree * newTree = new AVLTree();
     Node * prevNode = NULL;
     Node * currentNode = NULL;
     
+    AVLTree * leftTree = this;
+    
     /* Check if left tree has keys */
     if(leftTree->root == NULL){
         newTree->root = rightTree->root;
-        newTree->setSize( leftTree->getSize() + rightTree->getSize());
+        newTree->size = leftTree->getSize() + rightTree->getSize();
         return newTree;
     }
     
     /* Check if right tree has keys */
     if(rightTree->root == NULL){
         newTree->root = leftTree->root;
-        newTree->setSize( leftTree->getSize() + rightTree->getSize());
+        newTree->size = leftTree->getSize() + rightTree->getSize();
         return newTree;
     }
     
@@ -690,8 +690,10 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
     
     if ( leftHeight >= rightHeight ) {
         int minKey = rightTree->minKey();
+        assert(minKey != INVALID_KEY); /* minKey == NULL only if rightTree is empty */
+        
         rightTree->erase(minKey);
-        rightTree->setSize( rightTree->getSize() + 1);
+        rightTree->size = rightTree->getSize() + 1;
         Node * newRoot = new Node(minKey, NULL, NULL, NULL);
         int newRightHeight = rightTree->computeHeight();
         
@@ -737,8 +739,9 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
     }
     else { /* symmetric case */
         int maxKey = leftTree->maxKey();
+        assert(maxKey != INVALID_KEY); /* minKey == NULL only if righTree is empty */
         leftTree->erase(maxKey);
-        leftTree->setSize(leftTree->getSize() + 1);
+        leftTree->size = leftTree->getSize() + 1;
         Node * newRoot = new Node(maxKey, NULL, NULL, NULL);
         int newLeftHeight = leftTree->computeHeight();
         
@@ -792,7 +795,7 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
                 else {
                     newTree->rotateDoubleRight(prevNode);
                 }
-                newTree->setSize( leftTree->getSize() + rightTree->getSize());
+                newTree->size = leftTree->getSize() + rightTree->getSize();
                 return newTree;
             }
             else if (prevNode->balance == 0) {
@@ -812,7 +815,7 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
                 else {
                     newTree->rotateDoubleLeft(prevNode);
                 }
-                newTree->setSize(leftTree->getSize() + rightTree->getSize());
+                newTree->size = leftTree->getSize() + rightTree->getSize();
                 return newTree;
             }
             else if (prevNode->balance == 0) {
@@ -826,50 +829,53 @@ AVLTree * AVLTree::join(AVLTree * leftTree, AVLTree * rightTree) {
         currentNode = prevNode;
         prevNode = prevNode->parent;
     }
-    newTree->setSize( leftTree->getSize() + rightTree->getSize());
+    newTree->size = leftTree->getSize() + rightTree->getSize();
     return newTree;
 }
 
-std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
+std::tuple<int, AVLTree *, AVLTree *> AVLTree::split() {
     Node * leftRoot = NULL;
     Node * rightRoot = NULL;
     
     int splitKey;
-    if (tree->root == NULL) {
+    if (root == NULL) {
         /* empty tree */
         return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
-    else if (tree->root->left == NULL && tree->root->right == nullptr) {
+    else if (root->left == NULL && root->right == NULL) {
         /* Tree only has one node */
         return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
-    else if (tree->root->left == NULL) {
+    else if (root->left == NULL) {
         /* root's left child is NULL, right child is non-NULL */
-        splitKey = tree->root->right->key;
-        rightRoot = tree->root->right;
+        splitKey = root->right->key;
+        rightRoot = root->right;
         rightRoot->parent = NULL;
-        tree->root->right = NULL;
-        leftRoot = tree->root;
+        rightRoot->balance = 0;
+        root->right = NULL;
+        leftRoot = root;
+        leftRoot->balance = 0;
     }
     else {
         /* root's left child is non-NULL */
-        splitKey = tree->root->key;
-        leftRoot = tree->root->left;
+        splitKey = root->key;
+        leftRoot = root->left;
         leftRoot->parent = NULL;
-        tree->root->left = NULL;
+        root->left = NULL;
        
-        if (tree->root->right == NULL) {
+        if (root->right == NULL) {
             /* root does not have a right child */
-            rightRoot = tree->root;
+            rightRoot = root;
+            rightRoot->balance = 0;
         }
         else {
-            /* re-insert splitKey into left tree */
-            Node * oldRoot = tree->root;
-            tree->root = tree->root->right;
-            tree->root->parent = NULL;   
+            /* re-insert splitKey into right tree */
+            Node * oldRoot = root;
+            root = root->right;
+            root->parent = NULL;   
             delete(oldRoot);
-            tree->insert(splitKey);
-            rightRoot = tree->root;
+            insert(splitKey);
+            rightRoot = root;
             
         }
     }
@@ -878,17 +884,17 @@ std::tuple<int, AVLTree *, AVLTree *> AVLTree::split(AVLTree * tree) {
     AVLTree * rightTree = new AVLTree();
     rightTree->root = rightRoot;
      
-    /* TODO Update heights? */
+    int remainder = size %2;
+    int approxSizes = size / 2;
+    leftTree->size = approxSizes;
+    rightTree->size = approxSizes + remainder;
+    
     return std::make_tuple(splitKey, leftTree, rightTree);
 
 }
 
 int AVLTree::getSize() {
     return size;
-}
-
-void AVLTree::setSize(int size) {
-    this->size = size;
 }
 
 bool AVLTree::isEmpty() {

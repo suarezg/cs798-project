@@ -25,7 +25,7 @@ private:
     bool valid;
     //int size = 0;
     RouteNode * parent;
-    LinkedList * set; /* TODO replace with IBinarySearchTree interface */
+    AVLTree * set; /* TODO replace with IBinarySearchTree interface */
     
     /* For statistic locking */
     std::mutex m;
@@ -60,8 +60,8 @@ public:
     bool isLowContentionLimitReached();
     
     /* */
-    void setOrderedSet(LinkedList * set);
-    LinkedList * getOrderedSet();
+    void setOrderedSet(AVLTree * set);
+    AVLTree * getOrderedSet();
 };
 
 BaseNode::BaseNode() {
@@ -82,11 +82,11 @@ RouteNode * BaseNode::getParent() {
     return parent;
 }
 
-void BaseNode::setOrderedSet(LinkedList * set) {
+void BaseNode::setOrderedSet(AVLTree * set) {
     this->set = set;
 }
 
-LinkedList * BaseNode::getOrderedSet() {
+AVLTree * BaseNode::getOrderedSet() {
     return set;
 }
 
