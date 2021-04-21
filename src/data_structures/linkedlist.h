@@ -46,8 +46,8 @@ public:
     bool erase(const int & key);
     
     /* */
-    static LinkedList * join(LinkedList * leftList, LinkedList * rightList);
-    static std::tuple<int, LinkedList *, LinkedList *> split(LinkedList * list);
+    LinkedList * join(LinkedList * rightList);
+    std::tuple<int, LinkedList *, LinkedList *> split();
     
     int getSize();
     bool isEmpty();
@@ -209,9 +209,10 @@ bool LinkedList::checkSortedOrder() {
     return sorted;
 }
 
-LinkedList * LinkedList::join(LinkedList * leftList, LinkedList * rightList) {
+LinkedList * LinkedList::join(LinkedList * rightList) {
         
     LinkedList * newList = new LinkedList();
+    LinkedList * leftList = this;
     
     /* Check if left list has keys */
     if (leftList->isEmpty()) {
@@ -239,20 +240,20 @@ LinkedList * LinkedList::join(LinkedList * leftList, LinkedList * rightList) {
 }
 
 
-std::tuple<int, LinkedList *, LinkedList *> LinkedList::split(LinkedList * list) {
+std::tuple<int, LinkedList *, LinkedList *> LinkedList::split() {
     
-    if ( list->isEmpty() ) {
+    if ( isEmpty() ) {
         return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
-    else if ( list->getSize() == 1 ) {
+    else if ( size == 1 ) {
         return std::make_tuple(INVALID_KEY, nullptr, nullptr);
     }
     
-    int origSize = list->getSize();
+    int origSize = size;
     int splitPoint = origSize / 2;
     int count = 0;
     Node * prev = NULL;
-    Node * curr = list->head;
+    Node * curr = head;
     while ( count < splitPoint ) {
         prev = curr;
         curr = curr->next;
@@ -264,13 +265,13 @@ std::tuple<int, LinkedList *, LinkedList *> LinkedList::split(LinkedList * list)
     LinkedList * leftList = new LinkedList();
     LinkedList * rightList = new LinkedList();
 
-    leftList->head = list->head;
+    leftList->head = head;
     leftList->tail = prev;
     leftList->tail->next = NULL;
     leftList->size = splitPoint;
 
     rightList->head = curr;
-    rightList->tail = list->tail;
+    rightList->tail = tail;
     rightList->size = origSize - splitPoint;
 
     assert(leftList->tail->next == NULL);

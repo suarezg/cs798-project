@@ -181,7 +181,7 @@ void split_join_test() {
     int rightListSum = rightList->sumOfKeys();
     
     cout << "JOIN List\n==========" << endl;
-    LinkedList * joinedList = LinkedList::join(leftList, rightList);
+    LinkedList * joinedList = leftList->join(rightList);
     assert(joinedList->checkSortedOrder());
     joinedList->printKeys();
     cout << "Size: " << joinedList->getSize() << endl;
@@ -190,7 +190,7 @@ void split_join_test() {
     assert(joinListSum == (leftListSum + rightListSum));
     
     cout << "SPLIT List\n==========" << endl;
-    std::tuple<int, LinkedList *, LinkedList *> tuple = LinkedList::split(joinedList);
+    std::tuple<int, LinkedList *, LinkedList *> tuple = joinedList->split();
    
     int splitKey = std::get<0>(tuple);
     LinkedList * newLeftList = std::get<1>(tuple);
@@ -206,7 +206,7 @@ void split_join_test() {
     
     cout << "Empty list join" << endl;
     LinkedList * emptyList = new LinkedList();
-    std::tuple<int, LinkedList *, LinkedList *> nullTuple = LinkedList::split(emptyList);
+    std::tuple<int, LinkedList *, LinkedList *> nullTuple = emptyList->split();
     int invalidKey = std::get<0>(nullTuple);
     LinkedList * nullLeft = std::get<1>(nullTuple);
     LinkedList * nullRight = std::get<2>(nullTuple);
@@ -214,7 +214,7 @@ void split_join_test() {
     assert(nullLeft == nullptr);
     assert(nullRight == nullptr);
     
-    LinkedList * joinedWithEmpty = LinkedList::join(emptyList, newRightList);
+    LinkedList * joinedWithEmpty = emptyList->join(newRightList);
     joinedWithEmpty->printKeys();
     cout << "Size: " << joinedWithEmpty->getSize() << endl;
     assert(joinedWithEmpty->checkSortedOrder());
