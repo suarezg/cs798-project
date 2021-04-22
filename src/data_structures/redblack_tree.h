@@ -51,12 +51,14 @@ private:
     void insertFixup(Node * node);
     void eraseFixup(Node * node);
     void transplant(Node * u, Node * v);
+    Node * tree_minimum(Node * node);
     
     void leftRotate(Node * x);
     void rightRotate(Node * x);
     
     int blackHeight(Node * node);
     void printBFSOrder(Node * node);
+    int sumKeys(Node * node);
     
     Node * root;
     Node * sentinel;
@@ -86,6 +88,35 @@ public:
 /**
  * 
  */
+
+
+RedBlackTree::RedBlackTree() {
+    sentinel = new Node(INVALID_KEY, NULL, NULL, NULL, BLACK);
+    root = sentinel;
+    size = 0;
+}
+
+RedBlackTree::~RedBlackTree() {
+    
+}
+
+
+bool RedBlackTree::contains(const int & key) {
+    Node * currNode = root;
+    while (currNode != sentinel) {
+        int nodeKey = currNode->key;
+        if ( key < nodeKey ) {
+            currNode = currNode->left;
+        }
+        else if ( key > nodeKey ) {
+            currNode = currNode->right;
+        }
+        else { /* key found */
+            return true;
+        }
+    }
+    return false;
+}
 
 void RedBlackTree::leftRotate(Node * x) {
     Node * y = x->right;
@@ -174,48 +205,6 @@ void RedBlackTree::insertFixup(Node * z) {
     root->color = BLACK;
 }
 
-void RedBlackTree::transplant(Node* u, Node* v) {
-    if (u->parent == sentinel) {
-        root = v;
-    }
-    else if (u == u->parent->left) {
-        u->parent->left = v;
-    }
-    else {
-        u->parent->right = v;
-    }
-    v->parent = u->parent;
-}
-
-RedBlackTree::RedBlackTree() {
-    sentinel = new Node(INVALID_KEY, NULL, NULL, NULL, BLACK);
-    root = sentinel;
-    size = 0;
-}
-
-RedBlackTree::~RedBlackTree() {
-    
-}
-
-
-bool RedBlackTree::contains(const int & key) {
-    Node * currNode = root;
-    while (currNode != sentinel) {
-        int nodeKey = currNode->key;
-        if ( key < nodeKey ) {
-            currNode = currNode->left;
-        }
-        else if ( key > nodeKey ) {
-            currNode = currNode->right;
-        }
-        else { /* key found */
-            return true;
-        }
-    }
-    return false;
-}
-
-
 bool RedBlackTree::insert(const int & key) {
     Node * prevNode = sentinel;
     Node * currNode = root;
@@ -251,9 +240,142 @@ bool RedBlackTree::insert(const int & key) {
     return true;
 }
 
+void RedBlackTree::transplant(Node* u, Node* v) {
+    if (u->parent == sentinel) {
+        root = v;
+    }
+    else if (u == u->parent->left) {
+        u->parent->left = v;
+    }
+    else {
+        u->parent->right = v;
+    }
+    v->parent = u->parent;
+}
+
+RedBlackTree::Node * RedBlackTree::tree_minimum(Node * node) {
+    Node * curr = node;
+    while (curr->left != sentinel) {
+        curr = curr->left;
+    }
+    return curr;
+}
+
+void RedBlackTree::eraseFixup(Node* node) {
+    Node * x = node;
+    Node * w;
+    while ( (x != root) && (x->color == BLACK) ) {
+        if (x == x->parent->left) {
+            w = x->parent->right;
+            if (w->color == RED) {
+                w->color = BLACK;
+                x->parent->color = RED;
+                leftRotate(x->parent);
+                w = x->parent->right;
+            }
+            if ( (w->left->color == BLACK) && (w->right->color == BLACK) ) {
+                w->color = RED;
+                x = x->parent;
+            }
+            else {
+                if (w->right->color == BLACK) {
+                    w->left->color = BLACK;
+                    w->color = RED;
+                    rightRotate(w);
+                    w = x->parent->right;
+                }
+                w->color = x->parent->color;
+                x->parent->color = BLACK;
+                w->right->color = BLACK;
+                leftRotate(x->parent);
+                x = root;
+            }
+        }
+        else {
+            /* Symmetric case */
+            w = x->parent->left;
+            if (w->color == RED) {
+                w->color = BLACK;
+                x->parent->color = RED;
+                rightRotate(x->parent);
+                w = x->parent->left;
+            }
+            if ( (w->right->color == BLACK) && (w->left->color == BLACK) ) {
+                w->color = RED;
+                x = x->parent;
+            }
+            else {
+                if (w->left->color == BLACK) {
+                    w->right->color = BLACK;
+                    w->color = RED;
+                    leftRotate(w);
+                    w = x->parent->left;
+                }
+                w->color = x->parent->color;
+                x->parent->color = BLACK;
+                w->left->color = BLACK;
+                rightRotate(x->parent);
+                x = root;
+            }
+        }
+    }
+    x->color = BLACK;
+}
 
 bool RedBlackTree::erase(const int & key) {
-    return false;
+    /* Find node */
+    Node * z = root;
+    while (z != sentinel) {
+        if (key < z->key) {
+            z = z->left;
+        }
+        else if (key > z->key) {
+            z = z->right;
+        }
+        else { /* found node with key */
+            break;
+        }
+    }
+    
+    
+    if ( z == sentinel )
+        return false;  /* key is not in tree */
+    
+    /* Delete node */
+    Node * x;
+    Node * y = z;
+    Color yOriginalColor = y->color;
+    if (z->left == sentinel) {
+        x = z->right;
+        transplant(z, z->right);
+    }
+    else if (z->right == sentinel) {
+        x = z->left;
+        transplant(z, z->left);
+    }
+    else {
+        y = tree_minimum(z->right);
+        yOriginalColor = y->color;
+        x = y->right;
+        if ( y->parent == z ) {
+            x->parent = y;
+        }
+        else {
+            transplant(y, y->right);
+            y->right = z->right;
+            y->right->parent = y;
+        }
+        transplant(z, y);
+        y->left = z->left;
+        y->left->parent = y;
+        y->color = z->color;
+    }
+    
+    if (yOriginalColor == BLACK)
+        eraseFixup(x);
+    
+    size--;
+    return true;
 }
 
 IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
@@ -265,8 +387,14 @@ std::tuple<int, IOrderedSet *, IOrderedSet *> RedBlackTree::split() {
     return std::make_tuple(INVALID_KEY, nullptr, nullptr);
 }
 
+int RedBlackTree::sumKeys(Node* node) {
+    if (node == sentinel)
+        return 0;
+    return node->key + sumKeys(node->left) + sumKeys(node->right);
+}
+
 int RedBlackTree::sumOfKeys() {
-    return 0;
+    return sumKeys(root);
 }
 
 int RedBlackTree::getSize() {
