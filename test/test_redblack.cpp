@@ -42,38 +42,42 @@ bool tree_delete(RedBlackTree * tree, const int & key) {
 
 void simple_test() {
     RedBlackTree * tree = new RedBlackTree();
-    int blackHeight;
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    
     
     assert( tree_insert(tree, 5) ) ;
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
     assert( tree_insert(tree, 4) );
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
     assert( tree_insert(tree, 6) );
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
     assert( tree_insert(tree, 1) );
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
     assert( tree_insert(tree, 3) );
+    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
     assert( tree_insert(tree, 2) );
     
     tree->printBFSOrder();
-    blackHeight = tree->getBlackHeight();
     cout << "Black Height: " << tree->getBlackHeight() << endl;
     
     assert( !tree_insert(tree, 2) );
     tree->printBFSOrder();
-    blackHeight = tree->getBlackHeight();
     cout << "Black Height: " << tree->getBlackHeight() << endl;
     
-    assert( tree_delete(tree, 3) );
-    tree->printBFSOrder();
-    blackHeight = tree->getBlackHeight();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
-    
-    
-    assert( !tree_delete(tree, 3) );
-    blackHeight = tree->getBlackHeight();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
-    
-    assert( tree_delete(tree, 2));
-    tree->printBFSOrder();
-    blackHeight = tree->getBlackHeight();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+//    assert( tree_delete(tree, 3) );
+//    tree->printBFSOrder();
+//    blackHeight = tree->getBlackHeight();
+//    cout << "Black Height: " << tree->getBlackHeight() << endl;
+//    
+//    
+//    assert( !tree_delete(tree, 3) );
+//    blackHeight = tree->getBlackHeight();
+//    cout << "Black Height: " << tree->getBlackHeight() << endl;
+//    
+//    assert( tree_delete(tree, 2));
+//    tree->printBFSOrder();
+//    blackHeight = tree->getBlackHeight();
+//    cout << "Black Height: " << tree->getBlackHeight() << endl;
     
 }
 
