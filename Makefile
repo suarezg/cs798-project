@@ -4,7 +4,7 @@ FLAGS = -O0 -g
 LDFLAGS = -pthread
 
 #PROGRAMS = test_avl
-PROGRAMS = benchmark benchmark_debug benchmark_sanitize test_avl test_linkedlist
+PROGRAMS = benchmark benchmark_debug benchmark_sanitize test_avl test_linkedlist test_redblack
 
 all: $(PROGRAMS)
 
@@ -27,6 +27,9 @@ test_avl: build
 
 test_linkedlist: build
 	$(GPP) $(FLAGS) -MMD -MP -MF build/$@.d -o $@ test/test_linkedlist.cpp 
+	
+test_redblack: build
+	$(GPP) $(FLAGS) -MMD -MP -MF build/$@.d -o $@ test/test_redblack.cpp 
 	
 -include $(addprefix build/,$(addsuffix .d, $(PROGRAMS)))
 
