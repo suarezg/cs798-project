@@ -49,20 +49,26 @@ private:
     };
     
     void insertFixup(Node * node);
+#if 0
     void eraseFixup(Node * node);
+#else
+    void eraseFixup(Node * node, Node * parent);
+#endif
     void transplant(Node * u, Node * v);
     Node * tree_minimum(Node * node);
     
     void leftRotate(Node * x);
     void rightRotate(Node * x);
     
-    int blackHeight(Node * node);
+    int calcBlackHeight(Node * node);
     void printBFSOrder(Node * node);
     int sumKeys(Node * node);
+    Color getColor(Node * node);
+    void setColor(Node * node, Color newColor);
     
     Node * root;
-    Node * sentinel;
     int size;
+    int blackHeight;
     
 public:
     
@@ -80,7 +86,7 @@ public:
     int getSize();
     void printKeys();
     
-    int getBlackHeight();
+    int verifyBlackHeight();
     void printBFSOrder();
     
 };
@@ -91,9 +97,9 @@ public:
 
 
 RedBlackTree::RedBlackTree() {
-    sentinel = new Node(INVALID_KEY, NULL, NULL, NULL, BLACK);
-    root = sentinel;
+    root = NULL;
     size = 0;
+    blackHeight = 0;
 }
 
 RedBlackTree::~RedBlackTree() {
@@ -103,7 +109,7 @@ RedBlackTree::~RedBlackTree() {
 
 bool RedBlackTree::contains(const int & key) {
     Node * currNode = root;
-    while (currNode != sentinel) {
+    while (currNode != NULL) {
         int nodeKey = currNode->key;
         if ( key < nodeKey ) {
             currNode = currNode->left;
@@ -119,15 +125,18 @@ bool RedBlackTree::contains(const int & key) {
 }
 
 void RedBlackTree::leftRotate(Node * x) {
-    Node * y = x->right;
-    x->right = y->left;
+    assert(x != NULL);
     
-    if (y->left != sentinel) {
+    Node * y = x->right;
+    assert(y != NULL);
+    
+    x->right = y->left;
+    if (y->left != NULL) {
         y->left->parent = x;
     }
     y->parent = x->parent;
  
-    if (x->parent == sentinel) {
+    if (x->parent == NULL) {
         root = y;
     }
     else if (x == x->parent->left) {
@@ -141,15 +150,18 @@ void RedBlackTree::leftRotate(Node * x) {
 }
 
 void RedBlackTree::rightRotate(Node * x) {
-    Node * y = x->left;
-    x->left = y->right;
+    assert(x != NULL);
     
-    if (y->right != sentinel) {
+    Node * y = x->left;
+    assert(y != NULL);
+    
+    x->left = y->right;
+    if (y->right != NULL) {
         y->right->parent = x;
     }
     y->parent = x->parent;
  
-    if (x->parent == sentinel) {
+    if (x->parent == NULL) {
         root = y;
     }
     else if (x == x->parent->left) {
@@ -162,14 +174,27 @@ void RedBlackTree::rightRotate(Node * x) {
     x->parent = y;
 }
 
+RedBlackTree::Color RedBlackTree::getColor(Node * node) {
+    if (node == NULL)
+        return BLACK;
+    else
+        return node->color;
+}
+
+void RedBlackTree::setColor(Node * node, Color newColor) {
+    if (node != NULL)
+        node->color = newColor;
+}
+
+
 void RedBlackTree::insertFixup(Node * z) {
-    while (z->parent->color == RED) {
+    while ( (z != root) && getColor(z->parent) == RED) {
         if (z->parent == z->parent->parent->left) {
             Node * y = z->parent->parent->right;
-            if (y->color == RED) {
-                z->parent->color = BLACK;
-                y->color = BLACK;
-                z->parent->parent->color = RED;
+            if ( getColor(y) == RED ) {
+                setColor(z->parent, BLACK);
+                setColor(y, BLACK);
+                setColor(z->parent->parent, RED);
                 z = z->parent->parent;
             }
             else {
@@ -177,18 +202,18 @@ void RedBlackTree::insertFixup(Node * z) {
                     z = z->parent;
                     leftRotate(z);
                 }
-                z->parent->color = BLACK;
-                z->parent->parent->color = RED;
+                setColor(z->parent, BLACK);
+                setColor(z->parent->parent, RED);
                 rightRotate(z->parent->parent);
             }
         }
         else {
             /* symmetric case */
             Node * y = z->parent->parent->left;
-            if (y->color == RED) {
-                z->parent->color = BLACK;
-                y->color = BLACK;
-                z->parent->parent->color = RED;
+            if ( getColor(y) == RED ) {
+                setColor(z->parent, BLACK);
+                setColor(y, BLACK);
+                setColor(z->parent->parent, RED);
                 z = z->parent->parent;
             }
             else {
@@ -196,19 +221,23 @@ void RedBlackTree::insertFixup(Node * z) {
                     z = z->parent;
                     rightRotate(z);
                 }
-                z->parent->color = BLACK;
-                z->parent->parent->color = RED;
+                setColor(z->parent, BLACK);
+                setColor(z->parent->parent, RED);
                 leftRotate(z->parent->parent);
             }
         }
     }
-    root->color = BLACK;
+    
+    if ( getColor(root) == RED ) {
+        setColor(root, BLACK);
+        blackHeight++;
+    }
 }
 
 bool RedBlackTree::insert(const int & key) {
-    Node * prevNode = sentinel;
+    Node * prevNode = NULL;
     Node * currNode = root;
-    while (currNode != sentinel) {
+    while (currNode != NULL) {
         prevNode = currNode;
         if (key < currNode->key) {
             currNode = currNode->left;
@@ -224,8 +253,8 @@ bool RedBlackTree::insert(const int & key) {
     
     /* New key, insert into tree */
     size++;
-    Node * newNode = new Node(key, prevNode, sentinel, sentinel, RED);
-    if ( prevNode == sentinel ) {
+    Node * newNode = new Node(key, prevNode, NULL, NULL, RED);
+    if ( prevNode == NULL ) {
         root = newNode;
     }
     else if (newNode->key < prevNode->key) {
@@ -241,7 +270,9 @@ bool RedBlackTree::insert(const int & key) {
 }
 
 void RedBlackTree::transplant(Node* u, Node* v) {
-    if (u->parent == sentinel) {
+
+# if 0
+    if (u->parent == NULL) {
         root = v;
     }
     else if (u == u->parent->left) {
@@ -250,43 +281,136 @@ void RedBlackTree::transplant(Node* u, Node* v) {
     else {
         u->parent->right = v;
     }
-    v->parent = u->parent;
+    if (v != NULL)
+        v->parent = u->parent;
+    
+# else
+    /* save u's properties */
+    Color uColor = u->color;
+    Node * uParent = u->parent;
+    Node * uRight = u->right;
+    Node * uLeft = u->left;
+
+    u->color = v->color;
+    
+    if ( u != v->parent ) {
+        if (v->parent == NULL)
+            root = u;
+        else {
+            if ( v->parent->left == v)
+                v->parent->left = u;
+            else
+                v->parent->right = u;
+        }
+        u->parent = v->parent;
+    }
+    else {
+        u->parent = v;
+    }
+    
+    if (u != v->right) {
+        if (v->right != NULL)
+            v->right->parent = u;
+        
+        u->right = v->right;
+    }
+    else {
+        u->right = v;
+    }
+    
+    if (u != v->left) {
+        if (v->left != NULL)
+            v->left->parent = u;
+        
+        u->left = v->left;
+    }
+    else {
+        u->left = v;
+    }
+    
+    /* Move u's saved properties to v */
+    v->color = uColor;
+    if (v != uParent) {
+        if (uParent == NULL)
+            root = v;
+        else {
+            if (uParent->left == u)
+                uParent->left = v;
+            else
+                uParent->right = v;
+            
+        }
+        
+        v->parent = uParent;
+    }
+    else {
+        v->parent = u;
+    }
+    
+    if (v != uRight) {
+        if (uRight != NULL)
+            uRight->parent = v;
+        
+        v->right = uRight;
+    }
+    else {
+        v->right = u;
+    }
+    
+    if (v != uLeft) {
+        if (uLeft != NULL)
+            uLeft->parent = v;
+        
+        v->left = uLeft;
+    }
+    else {
+        v->left = u;
+    }
+    
+
+#endif
 }
 
 RedBlackTree::Node * RedBlackTree::tree_minimum(Node * node) {
     Node * curr = node;
-    while (curr->left != sentinel) {
+    while (curr->left != NULL) {
         curr = curr->left;
     }
     return curr;
 }
 
+#if 0
 void RedBlackTree::eraseFixup(Node* node) {
+    assert(node != NULL);
     Node * x = node;
     Node * w;
-    while ( (x != root) && (x->color == BLACK) ) {
+    while ( (x != root) && (getColor(x) == BLACK) ) {
         if (x == x->parent->left) {
             w = x->parent->right;
-            if (w->color == RED) {
-                w->color = BLACK;
-                x->parent->color = RED;
+            if (getColor(w) == RED) {
+                setColor(w, BLACK);
+                setColor(x->parent, RED);
                 leftRotate(x->parent);
                 w = x->parent->right;
             }
-            if ( (w->left->color == BLACK) && (w->right->color == BLACK) ) {
-                w->color = RED;
+            if ( (getColor(w->left) == BLACK) && (getColor(w->right) == BLACK) ) {
+                setColor(w, RED);
                 x = x->parent;
+                
+                if (x == root)
+                    blackHeight--;
             }
             else {
-                if (w->right->color == BLACK) {
-                    w->left->color = BLACK;
-                    w->color = RED;
+                if (getColor(w->right) == BLACK) {
+                    setColor(w->left, BLACK);
+                    setColor(w, RED);
                     rightRotate(w);
                     w = x->parent->right;
                 }
-                w->color = x->parent->color;
-                x->parent->color = BLACK;
-                w->right->color = BLACK;
+                setColor(w, getColor(x->parent));
+                setColor(x->parent, BLACK);
+                if ( w->right != NULL)
+                    setColor(w->right, BLACK);
                 leftRotate(x->parent);
                 x = root;
             }
@@ -294,38 +418,136 @@ void RedBlackTree::eraseFixup(Node* node) {
         else {
             /* Symmetric case */
             w = x->parent->left;
-            if (w->color == RED) {
-                w->color = BLACK;
-                x->parent->color = RED;
+            if (getColor(w) == RED) {
+                setColor(w, BLACK);
+                setColor(x->parent, RED);
                 rightRotate(x->parent);
                 w = x->parent->left;
             }
-            if ( (w->right->color == BLACK) && (w->left->color == BLACK) ) {
-                w->color = RED;
+            if ( (getColor(w->right) == BLACK) && (getColor(w->left) == BLACK) ) {
+                setColor(w, RED);
                 x = x->parent;
+                
+                if (x == root)
+                    blackHeight--;
             }
             else {
-                if (w->left->color == BLACK) {
-                    w->right->color = BLACK;
-                    w->color = RED;
+                if (getColor(w->left) == BLACK) {
+                    setColor(w->right, BLACK);
+                    setColor(w, RED);
                     leftRotate(w);
                     w = x->parent->left;
                 }
-                w->color = x->parent->color;
-                x->parent->color = BLACK;
-                w->left->color = BLACK;
+                setColor(w, getColor(x->parent));
+                setColor(x->parent, BLACK);
+                if (w->left != NULL)
+                    setColor(w->left, BLACK);
                 rightRotate(x->parent);
                 x = root;
             }
         }
     }
-    x->color = BLACK;
+    
+    if (getColor(x) == RED) {
+        setColor(x, BLACK);
+        if (x == root)
+            blackHeight++;
+    }
+    
 }
 
+#else
+void RedBlackTree::eraseFixup(Node* node, Node * parent) {
+    Node * curr = node;
+    Node * currParent = parent;
+    Node * sibling;
+    
+    while (curr != root && getColor(curr) == BLACK ) {
+        if (curr == currParent->left) {
+            sibling = currParent->right;
+        
+            if (getColor(sibling) == RED) {
+                setColor(sibling, BLACK);
+                setColor(currParent, RED);
+                leftRotate(currParent);
+                sibling = currParent->right;
+            }
+            
+            if ((getColor(sibling->left) == BLACK) && (getColor(sibling->right) == BLACK)) {
+                setColor(sibling, RED);
+                
+                curr = currParent;
+                currParent = currParent->parent;
+                
+                if (curr == root)
+                    blackHeight--;
+            }
+            else {
+                if ( getColor(sibling->right) == BLACK ) {
+                    setColor(sibling->left, BLACK);
+                    setColor(sibling, RED);
+                    rightRotate(sibling);
+                    sibling = currParent->right;
+                }
+                setColor(sibling, getColor(currParent));
+                setColor(currParent, BLACK);
+                if (sibling->right != NULL)
+                    setColor(sibling->right, BLACK);
+                leftRotate(currParent);
+                curr = root;
+            }    
+        }
+        else { /* symmetric case */
+            sibling = currParent->left;
+            
+            if ( getColor(sibling) == RED ) {
+                setColor(sibling, BLACK);
+                setColor(currParent, RED);
+                rightRotate(currParent);
+                sibling = currParent->left;
+            }
+            
+            if ((getColor(sibling->left) == BLACK) && (getColor(sibling->right) == BLACK)) {
+                setColor(sibling, RED);
+                
+                curr = currParent;
+                currParent = currParent->parent;
+                
+                if (curr == root)
+                    blackHeight--;
+            }
+            else {
+                if ( getColor(sibling->left) == BLACK ) {
+                    setColor(sibling->right, BLACK);
+                    setColor(sibling, RED);
+                    leftRotate(sibling);
+                    sibling = currParent->left;
+                }
+                setColor(sibling, getColor(currParent));
+                setColor(currParent, BLACK);
+                if (sibling->left != NULL)
+                    setColor(sibling->left, BLACK);
+                rightRotate(currParent);
+                curr = root;
+            }
+            
+        }
+    }
+    if ( getColor(curr) == RED ) {
+        setColor(curr, BLACK);
+        
+        if (curr == root)
+            blackHeight++;
+    } 
+    
+}
+#endif
+
 bool RedBlackTree::erase(const int & key) {
+#if 0
     /* Find node */
     Node * z = root;
-    while (z != sentinel) {
+    while (z != NULL) {
         if (key < z->key) {
             z = z->left;
         }
@@ -338,44 +560,111 @@ bool RedBlackTree::erase(const int & key) {
     }
     
     
-    if ( z == sentinel )
+    if ( z == NULL )
         return false;  /* key is not in tree */
     
-    /* Delete node */
+    
+    
+    /* Node z contains the key */
     Node * x;
     Node * y = z;
-    Color yOriginalColor = y->color;
-    if (z->left == sentinel) {
+    Node * zParent;
+    Color yOriginalColor = getColor(y);
+    if (z->left == NULL) {  /* Does not have left child, might have right */
         x = z->right;
         transplant(z, z->right);
     }
-    else if (z->right == sentinel) {
+    else if (z->right == NULL) { /* Only has right child */
         x = z->left;
         transplant(z, z->left);
     }
-    else {
+    else { /* */
         y = tree_minimum(z->right);
-        yOriginalColor = y->color;
+        yOriginalColor = getColor(y);
         x = y->right;
-        if ( y->parent == z ) {
+        if ( (y->parent == z) && (x != NULL) ) {
             x->parent = y;
         }
         else {
             transplant(y, y->right);
             y->right = z->right;
-            y->right->parent = y;
+            if (y->right != NULL)
+                y->right->parent = y;
         }
         transplant(z, y);
         y->left = z->left;
-        y->left->parent = y;
-        y->color = z->color;
+        if (y->left != NULL)
+            y->left->parent = y;
+        setColor(y, getColor(z));
     }
     
-    if (yOriginalColor == BLACK)
+    if ( yOriginalColor == BLACK )
         eraseFixup(x);
     
     size--;
     return true;
+#else
+     /* Find node */
+    Node * node = root;
+    while (node != NULL) {
+        if (key < node->key) {
+            node = node->left;
+        }
+        else if (key > node->key) {
+            node = node->right;
+        }
+        else { /* found node with key */
+            break;
+        }
+    }
+    
+    
+    if ( node == NULL )
+        return false;  /* key is not in tree */
+    
+    if ( node == root && 
+            (node->left == NULL) && (node->right == NULL) ) {
+        root = NULL;
+        blackHeight = 0;
+        return true;
+    }
+    
+    if ( (node->left != NULL) && (node->right != NULL) ) {
+        /* Node has children */
+        Node * succ = tree_minimum(node->right);
+        
+        transplant(node, succ);
+    }
+    
+    
+    Node * child = NULL;
+    if (node->left != NULL) 
+        child = node->left;
+    else
+        child = node->right;
+    
+    if (child != NULL)
+        child->parent = node->parent;
+    
+    if (node->parent == NULL) {
+        root = child;
+        
+        if (getColor(node) == BLACK)
+            blackHeight--;
+    }
+    else {
+        if (node == node->parent->left)
+            node->parent->left = child;
+        else
+            node->parent->right = child;
+    }
+    
+    if (getColor(node) == BLACK)
+        eraseFixup(child, node->parent);
+    
+    size --;
+    return true;
+#endif
 }
 
 IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
@@ -388,7 +677,7 @@ std::tuple<int, IOrderedSet *, IOrderedSet *> RedBlackTree::split() {
 }
 
 int RedBlackTree::sumKeys(Node* node) {
-    if (node == sentinel)
+    if (node == NULL)
         return 0;
     return node->key + sumKeys(node->left) + sumKeys(node->right);
 }
@@ -409,16 +698,16 @@ void RedBlackTree::printKeys() {
  * From StackOverflow 
  * https://stackoverflow.com/questions/13848011/how-to-check-the-black-height-of-a-node-for-all-paths-to-its-descendent-leaves
  */
-int RedBlackTree::blackHeight(Node* node) {
-    if (node == sentinel) {
-        return 1;
+int RedBlackTree::calcBlackHeight(Node* node) {
+    if (node == NULL) {
+        return 1; /* leaf (nil) node */
     }
     
-    int leftBlackHeight = blackHeight(node->left);
+    int leftBlackHeight = calcBlackHeight(node->left);
     if (leftBlackHeight == 0)
         return leftBlackHeight;
     
-    int rightBlackHeight = blackHeight(node->right);
+    int rightBlackHeight = calcBlackHeight(node->right);
     if (rightBlackHeight == 0)
         return rightBlackHeight;
     
@@ -436,24 +725,24 @@ int RedBlackTree::blackHeight(Node* node) {
 }
 
 
-int RedBlackTree::getBlackHeight() {
-    return blackHeight(root);
+int RedBlackTree::verifyBlackHeight() {
+    return calcBlackHeight(root);
 }
 
 void RedBlackTree::printBFSOrder(Node * node) {
-    if (node != sentinel) {
+    if (node != NULL) {
         queue<Node *> q;
         q.push(node);
         printf("start-");
         while ( !q.empty() ) {
             Node * curr = q.front();
             q.pop();
-            int parentKey = curr->parent == sentinel? INVALID_KEY : curr->parent->key;
+            int parentKey = curr->parent == NULL? INVALID_KEY : curr->parent->key;
             char c = curr->color == BLACK? 'b' : 'r';
             printf("%d_%c(p(%d))->", curr->key, c, parentKey);
-            if (curr->left != sentinel)
+            if (curr->left != NULL)
                 q.push(curr->left);
-            if (curr->right != sentinel)
+            if (curr->right != NULL)
                 q.push(curr->right);
         }
         printf("end\n"); 

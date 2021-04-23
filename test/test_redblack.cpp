@@ -42,39 +42,39 @@ bool tree_delete(RedBlackTree * tree, const int & key) {
 
 void simple_test() {
     RedBlackTree * tree = new RedBlackTree();
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     
     
     assert( tree_insert(tree, 5) ) ;
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     assert( tree_insert(tree, 4) );
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     assert( tree_insert(tree, 6) );
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     assert( tree_insert(tree, 1) );
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     assert( tree_insert(tree, 3) );
-    cout << "Black Height (start): " << tree->getBlackHeight() << endl;
+    cout << "Black Height (start): " << tree->verifyBlackHeight() << endl;
     assert( tree_insert(tree, 2) );
     
     tree->printBFSOrder();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+    cout << "Black Height: " << tree->verifyBlackHeight() << endl;
     
     assert( !tree_insert(tree, 2) );
     tree->printBFSOrder();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+    cout << "Black Height: " << tree->verifyBlackHeight() << endl;
     
     assert( tree_delete(tree, 3) );
     tree->printBFSOrder();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+    cout << "Black Height: " << tree->verifyBlackHeight() << endl;
     
     
     assert( !tree_delete(tree, 3) );
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+    cout << "Black Height: " << tree->verifyBlackHeight() << endl;
     
     assert( tree_delete(tree, 2));
     tree->printBFSOrder();
-    cout << "Black Height: " << tree->getBlackHeight() << endl;
+    cout << "Black Height: " << tree->verifyBlackHeight() << endl;
     
 }
 
@@ -100,7 +100,7 @@ void timed_test(int millis) {
             numbers.insert(num);
             checksum += num;
         }
-        assert( tree->getBlackHeight() != 0 );
+        assert( tree->verifyBlackHeight() != 0 );
     }
     
     cout << "Prefill complete." << endl;
@@ -133,7 +133,6 @@ void timed_test(int millis) {
         }
         else {
             
-            
             bool op = tree->erase(num);
             bool expected;
             
@@ -153,7 +152,7 @@ void timed_test(int millis) {
             deleteOps++;
         }
         numOps++;
-        assert(tree->getBlackHeight() != 0);
+        assert(tree->verifyBlackHeight() != 0);
             
     }
     
@@ -163,7 +162,7 @@ void timed_test(int millis) {
     string status = rbSum == checksum ? ".OK." : ".ERROR.";
     
     cout << "RedBlack Tree Sum: " << rbSum << ". Checksum: " << checksum << status << endl;
-    cout << "BlackHeight: " << tree->getBlackHeight() << endl;
+    cout << "BlackHeight: " << tree->verifyBlackHeight() << endl;
     cout << "Number of operations: " << numOps << endl;
     cout << "Insert operations: " << insertOps << endl;
     cout << "Delete operations: " << deleteOps << endl;
