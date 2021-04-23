@@ -202,37 +202,40 @@ void split_join_test() {
     
     int joinTreeSum = joinedTree->sumOfKeys();
     assert(joinTreeSum == (leftTreeSum + rightTreeSum));
-//    
-//    cout << "SPLIT TREES\n==========" << endl;
-//    std::tuple<int, IOrderedSet *, IOrderedSet *> tuple = joinedTree->split();
-//   
-//    int splitKey = std::get<0>(tuple);
-//    IOrderedSet * newLeftSet = std::get<1>(tuple);
-//    IOrderedSet * newRightSet = std::get<2>(tuple);
-//    RedBlackTree * newLeftTree = static_cast<RedBlackTree *>(newLeftSet);
-//    RedBlackTree * newRightTree = static_cast<RedBlackTree *>(newRightSet);
-//    
-//    cout << "Split Key: " << splitKey << endl;
-//    
-//    cout << "[Left Tree]";
-//    newLeftTree->printBFSOrder();
-//    cout << "[Right Tree]";
-//    newRightTree->printBFSOrder();
-//    
-//    cout << "Empty tree join" << endl;
-//    RedBlackTree * emptyTree = new RedBlackTree();
-//    std::tuple<int, IOrderedSet *, IOrderedSet *> nullTuple = emptyTree->split();
-//    int invalidKey = std::get<0>(nullTuple);
-//    IOrderedSet * nullLeft = std::get<1>(nullTuple);
-//    IOrderedSet * nullRight = std::get<2>(nullTuple);
-//    assert(invalidKey == -1);
-//    assert(nullLeft == nullptr);
-//    assert(nullRight == nullptr);
-//    
-//    IOrderedSet * joinedWithEmptySet = emptyTree->join(newRightTree);
-//    RedBlackTree * joinedWithEmpty = static_cast<RedBlackTree *>(joinedWithEmptySet);
-//    joinedWithEmpty->printBFSOrder();
-//    assert(joinedWithEmpty->checkRedBlack());
+    
+    cout << "SPLIT TREES\n==========" << endl;
+    std::tuple<int, IOrderedSet *, IOrderedSet *> tuple = joinedTree->split();
+   
+    int splitKey = std::get<0>(tuple);
+    IOrderedSet * newLeftSet = std::get<1>(tuple);
+    IOrderedSet * newRightSet = std::get<2>(tuple);
+    RedBlackTree * newLeftTree = static_cast<RedBlackTree *>(newLeftSet);
+    RedBlackTree * newRightTree = static_cast<RedBlackTree *>(newRightSet);
+    
+    cout << "Split Key: " << splitKey << endl;
+    
+    cout << "[Left Tree]";
+    newLeftTree->printBFSOrder();
+    assert(newLeftTree->verifyBlackHeight() != 0);
+    cout << "[Right Tree]";
+    newRightTree->printBFSOrder();
+    assert(newRightTree->verifyBlackHeight() != 0);
+    
+    cout << "Empty tree split" << endl;
+    RedBlackTree * emptyTree = new RedBlackTree();
+    std::tuple<int, IOrderedSet *, IOrderedSet *> nullTuple = emptyTree->split();
+    int invalidKey = std::get<0>(nullTuple);
+    IOrderedSet * nullLeft = std::get<1>(nullTuple);
+    IOrderedSet * nullRight = std::get<2>(nullTuple);
+    assert(invalidKey == -1);
+    assert(nullLeft == nullptr);
+    assert(nullRight == nullptr);
+    
+    cout << "Empty tree join" << endl;
+    IOrderedSet * joinedWithEmptySet = emptyTree->join(newRightTree);
+    RedBlackTree * joinedWithEmpty = static_cast<RedBlackTree *>(joinedWithEmptySet);
+    joinedWithEmpty->printBFSOrder();
+    assert(joinedWithEmpty->verifyBlackHeight() != 0);
     
 }   
 
@@ -258,8 +261,8 @@ int main(int argc, char** argv) {
         }
     }
     
-    //simple_test( );
-    //timed_test( millisToRun );
+    simple_test( );
+    timed_test( millisToRun );
     split_join_test( );
    
     return 0;

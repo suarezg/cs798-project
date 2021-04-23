@@ -67,7 +67,6 @@ private:
     void setColor(Node * node, Color newColor);
     
     Node * root;
-    int size;
     int blackHeight;
     
 public:
@@ -98,7 +97,6 @@ public:
 
 RedBlackTree::RedBlackTree() {
     root = NULL;
-    size = 0;
     blackHeight = 0;
 }
 
@@ -252,7 +250,6 @@ bool RedBlackTree::insert(const int & key) {
     }
     
     /* New key, insert into tree */
-    size++;
     Node * newNode = new Node(key, prevNode, NULL, NULL, RED);
     if ( prevNode == NULL ) {
         root = newNode;
@@ -265,7 +262,6 @@ bool RedBlackTree::insert(const int & key) {
     }
     insertFixup(newNode);
     
-    size++;
     return true;
 }
 
@@ -609,7 +605,7 @@ bool RedBlackTree::erase(const int & key) {
     if ( yOriginalColor == BLACK )
         eraseFixup(x);
     
-    size--;
+
     return true;
 #else
      /* Find node */
@@ -670,7 +666,7 @@ bool RedBlackTree::erase(const int & key) {
     if (getColor(node) == BLACK)
         eraseFixup(child, node->parent);
     
-    size --;
+
     return true;
 #endif
 }
@@ -681,16 +677,18 @@ IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
         assert(false); /* incorrect type */
     }
     
+    /* check if either set is empty */
+    if ( rightTree->root == NULL )
+        return this;
+    else if ( root == NULL )
+        return rightSet;
+    
+    
+    /* Both sets are not empty */
     Node * maxT1 = tree_maximum(root);
     Node * minT2 = rightTree->tree_minimum(rightTree->root);
     assert(maxT1->key < minT2->key);
     
-    if (minT2 == NULL) {
-        return this;
-    }
-    else if  (maxT1 == NULL) {
-        return rightSet;
-    }
     
     Node * aux = NULL;
     if ( maxT1 != root ) {
@@ -721,10 +719,7 @@ IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
         setColor(minT2, RED);
         minT2->left = NULL;
         
-        if (size > 0 && rightTree->size > 0)
-            size += rightTree->size;
-        else
-            size = 0;
+
         
         return this;
     }
@@ -798,11 +793,7 @@ IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
         blackHeight = rightTree->blackHeight;
         root = newRoot;
     }
-    
-    if (size > 0 && rightTree->size > 0)
-        size += rightTree->size;
-    else
-        size = 0;
+
     
     insertFixup(aux);
     
@@ -811,7 +802,108 @@ IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
 
 
 std::tuple<int, IOrderedSet *, IOrderedSet *> RedBlackTree::split() {
-    return std::make_tuple(INVALID_KEY, nullptr, nullptr);
+    
+    int splitKey;
+    if (root == NULL) {
+        /* empty tree */
+        return std::make_tuple(INVALID_KEY, nullptr, nullptr);
+    }
+    else if (root->left  == NULL && root->right == NULL) {\
+        /* Tree only has one node */
+        return std::make_tuple(INVALID_KEY, nullptr, nullptr);
+    }
+    else if (root->left == NULL) {
+        /* Root only has a right child */
+        int leftRootKey = root->key;
+        int rightRootKey = root->right->key;
+        splitKey = rightRootKey;
+        
+        RedBlackTree * leftTree = new RedBlackTree();
+        RedBlackTree * rightTree = new RedBlackTree();
+        
+        leftTree->insert(leftRootKey);
+        rightTree->insert(rightRootKey);
+        
+        delete(root->right);
+        delete(root);
+        
+        return std::make_tuple(splitKey, leftTree, rightTree);
+    }
+    else if (root->right == NULL) {
+        /* Root only has a left child */
+        int leftRootKey = root->left->key;
+        int rightRootKey = root->key;
+        splitKey = rightRootKey;
+        
+        RedBlackTree * leftTree = new RedBlackTree();
+        RedBlackTree * rightTree = new RedBlackTree();
+        
+        leftTree->insert(leftRootKey);
+        rightTree->insert(rightRootKey);
+        
+        delete(root->left);
+        delete(root);
+        
+        return std::make_tuple(splitKey, leftTree, rightTree);
+    }
+    else {
+        /* root has two children (difficult case) */
+        RedBlackTree * leftTree = new RedBlackTree();
+        RedBlackTree * rightTree = new RedBlackTree();
+        int currBHeight = blackHeight;
+        Node * spineRight = NULL;
+        Node * child = NULL;
+        Node * next = NULL;
+        Node * splitNode = root;
+        int splitKey = splitNode->key;
+        
+        Node * curr = root;
+        assert(curr != NULL);
+        assert(getColor(curr) == BLACK);
+        currBHeight--;
+        
+        /* Create right tree */
+        child = curr->right;
+        next = curr->left;
+        
+        rightTree->root = child;
+        rightTree->blackHeight = currBHeight;
+        rightTree->root->parent = NULL;
+        if (getColor(rightTree->root) == RED) {
+            setColor(rightTree->root, BLACK);
+            rightTree->blackHeight++;
+        }
+       
+        spineRight = rightTree->root;
+                
+        /* Create left tree */
+        child = curr->left;
+        next = curr->right;
+        
+        leftTree->root = child;
+        leftTree->blackHeight = currBHeight;
+        leftTree->root->parent = NULL;
+        if (getColor(leftTree->root) == RED) {
+            setColor(leftTree->root, BLACK);
+            leftTree->blackHeight++;
+        }
+        
+        /* Insert split node (root) into right tree */
+        while ( spineRight->left != NULL ) {
+            spineRight = spineRight->left;
+        }
+        
+        splitNode->parent = spineRight;
+        setColor(splitNode, RED);
+        splitNode->right = NULL;
+        splitNode->left = NULL;
+        spineRight->left = splitNode;
+        
+        rightTree->insertFixup(splitNode);
+        
+        return std::make_tuple(splitKey, leftTree, rightTree);
+    }
+    
 }
 
 int RedBlackTree::sumKeys(Node* node) {
@@ -824,8 +916,12 @@ int RedBlackTree::sumOfKeys() {
     return sumKeys(root);
 }
 
+/* lazy evaluation */
 int RedBlackTree::getSize() {
-    return size;
+    /* Split operation makes it difficult to keep a member variable for size */
+    /* This will have to be a tree traversal */
+    // TODO implement
+    return 0;
 }
 
 void RedBlackTree::printKeys() {
