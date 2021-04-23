@@ -170,6 +170,72 @@ void timed_test(int millis) {
     
 }
 
+void split_join_test() {
+    
+    const int LEFT_TREE_MIN = 1;
+    const int LEFT_TREE_MAX = 3;
+    const int RIGHT_TREE_MIN = 11;
+    const int RIGHT_TREE_MAX = 20;
+    
+    RedBlackTree * leftTree = new RedBlackTree();
+    RedBlackTree * rightTree = new RedBlackTree();
+    for (int i = LEFT_TREE_MIN; i <= LEFT_TREE_MAX; i++)
+        leftTree->insert(i);
+    
+    cout << "[Left Tree]";
+    leftTree->printBFSOrder();
+    
+    for (int i = RIGHT_TREE_MIN; i <= RIGHT_TREE_MAX ; i++) 
+       rightTree->insert(i);
+    
+    cout << "[Right Tree]";
+    rightTree->printBFSOrder();
+    
+    int leftTreeSum = leftTree->sumOfKeys();
+    int rightTreeSum = rightTree->sumOfKeys();
+    
+    cout << "JOIN TREES\n==========" << endl;
+    IOrderedSet * joinedSet = leftTree->join(rightTree);
+    RedBlackTree * joinedTree = static_cast<RedBlackTree *>(joinedSet);
+    assert(joinedTree->verifyBlackHeight() != 0);
+    joinedTree->printBFSOrder();
+    
+    int joinTreeSum = joinedTree->sumOfKeys();
+    assert(joinTreeSum == (leftTreeSum + rightTreeSum));
+//    
+//    cout << "SPLIT TREES\n==========" << endl;
+//    std::tuple<int, IOrderedSet *, IOrderedSet *> tuple = joinedTree->split();
+//   
+//    int splitKey = std::get<0>(tuple);
+//    IOrderedSet * newLeftSet = std::get<1>(tuple);
+//    IOrderedSet * newRightSet = std::get<2>(tuple);
+//    RedBlackTree * newLeftTree = static_cast<RedBlackTree *>(newLeftSet);
+//    RedBlackTree * newRightTree = static_cast<RedBlackTree *>(newRightSet);
+//    
+//    cout << "Split Key: " << splitKey << endl;
+//    
+//    cout << "[Left Tree]";
+//    newLeftTree->printBFSOrder();
+//    cout << "[Right Tree]";
+//    newRightTree->printBFSOrder();
+//    
+//    cout << "Empty tree join" << endl;
+//    RedBlackTree * emptyTree = new RedBlackTree();
+//    std::tuple<int, IOrderedSet *, IOrderedSet *> nullTuple = emptyTree->split();
+//    int invalidKey = std::get<0>(nullTuple);
+//    IOrderedSet * nullLeft = std::get<1>(nullTuple);
+//    IOrderedSet * nullRight = std::get<2>(nullTuple);
+//    assert(invalidKey == -1);
+//    assert(nullLeft == nullptr);
+//    assert(nullRight == nullptr);
+//    
+//    IOrderedSet * joinedWithEmptySet = emptyTree->join(newRightTree);
+//    RedBlackTree * joinedWithEmpty = static_cast<RedBlackTree *>(joinedWithEmptySet);
+//    joinedWithEmpty->printBFSOrder();
+//    assert(joinedWithEmpty->checkRedBlack());
+    
+}   
+
 
 int main(int argc, char** argv) {
     
@@ -192,9 +258,9 @@ int main(int argc, char** argv) {
         }
     }
     
-    simple_test( );
-    timed_test( millisToRun );
-    //split_join_test( );
+    //simple_test( );
+    //timed_test( millisToRun );
+    split_join_test( );
    
     return 0;
 }

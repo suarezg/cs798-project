@@ -56,7 +56,7 @@ private:
 #endif
     void transplant(Node * u, Node * v);
     Node * tree_minimum(Node * node);
-    
+    Node * tree_maximum(Node * node);
     void leftRotate(Node * x);
     void rightRotate(Node * x);
     
@@ -379,6 +379,14 @@ RedBlackTree::Node * RedBlackTree::tree_minimum(Node * node) {
     return curr;
 }
 
+RedBlackTree::Node * RedBlackTree::tree_maximum(Node * node) {
+    Node * curr = node;
+    while (curr->right != NULL) {
+        curr = curr->right;
+    }
+    return curr;
+}
+
 #if 0
 void RedBlackTree::eraseFixup(Node* node) {
     assert(node != NULL);
@@ -668,7 +676,137 @@ bool RedBlackTree::erase(const int & key) {
 }
 
 IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
-    return NULL;
+    RedBlackTree * rightTree;
+    if ( (rightTree = dynamic_cast<RedBlackTree *>(rightSet)) == nullptr ) {
+        assert(false); /* incorrect type */
+    }
+    
+    Node * maxT1 = tree_maximum(root);
+    Node * minT2 = rightTree->tree_minimum(rightTree->root);
+    assert(maxT1->key < minT2->key);
+    
+    if (minT2 == NULL) {
+        return this;
+    }
+    else if  (maxT1 == NULL) {
+        return rightSet;
+    }
+    
+    Node * aux = NULL;
+    if ( maxT1 != root ) {
+        maxT1->parent->right = maxT1->left;
+        
+        if ( maxT1->left != NULL)
+            maxT1->left->parent = maxT1->parent;
+        
+        if (getColor(maxT1) == BLACK)
+            eraseFixup(maxT1->left, maxT1->parent);
+        
+        aux = maxT1;
+    }
+    else if (minT2 != rightTree->root) {
+        minT2->parent->left = minT2->right;
+        
+        if ( minT2->right != NULL )
+            minT2->right->parent = minT2->parent;
+        
+        if (getColor(minT2) == BLACK)
+            rightTree->eraseFixup(minT2->right, minT2->parent);
+        
+        aux = minT2;
+    }
+    else {
+        root->right = minT2;
+        minT2->parent = root;
+        setColor(minT2, RED);
+        minT2->left = NULL;
+        
+        if (size > 0 && rightTree->size > 0)
+            size += rightTree->size;
+        else
+            size = 0;
+        
+        return this;
+    }
+    
+    Node * node1 = root;
+    Node * node2 = rightTree->root;
+    int currBHeight;
+    
+    if (blackHeight <= rightTree->blackHeight) {
+        /* This tree is smaller than rightTree */
+        node2 = rightTree->root;
+        currBHeight = rightTree->blackHeight;
+        
+        /* Find node in leftmost path of rightTree with 
+         * blackHeight == our tree's blackHeight */
+        while (currBHeight > blackHeight) {
+            if (getColor(node2) == BLACK)
+                currBHeight--;
+            node2 = node2->left;
+        }
+        
+        if (getColor(node2) == RED)
+            node2 = node2->left;
+    }
+    else {
+        /* This tree is taller */
+        node1 = root;
+        currBHeight = blackHeight;
+        /* Find node in rightmost path of our tree with
+         * blackHeight == rightTree's blackHeight */
+        while (currBHeight > rightTree->blackHeight) {
+            if (getColor(node1) == BLACK)
+                currBHeight--;
+            node1 = node1->right;
+        }
+        
+        if (getColor(node1) == RED)
+            node1 = node1->right;
+        
+    }
+    
+    Node * newRoot = NULL;
+    Node * parent;
+    
+    if (node1 == root) {
+        parent = node2->parent;
+        if (parent == NULL)
+            newRoot = aux;
+        else {
+            newRoot = rightTree->root;
+            
+            parent->left = aux;
+        }
+    }
+    else {
+        parent = node1->parent;
+        assert(parent != NULL);
+        newRoot = root;
+        parent->right = aux;
+    }
+    
+    aux->parent = parent;
+    setColor(aux, RED);
+    aux->left = node1;
+    aux->right = node2;
+    
+    node1->parent = aux;
+    node2->parent = aux;
+    
+    if ( root != newRoot ) {
+        blackHeight = rightTree->blackHeight;
+        root = newRoot;
+    }
+    
+    if (size > 0 && rightTree->size > 0)
+        size += rightTree->size;
+    else
+        size = 0;
+    
+    insertFixup(aux);
+    
+    return this;
 }
 
 
