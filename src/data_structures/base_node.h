@@ -15,8 +15,7 @@
 #define BASE_NODE_H
 
 #include "route_node.h"
-#include "avl_tree.h"
-#include "linkedlist.h"
+
 
 class BaseNode : public CA_Node {
 private:

@@ -31,6 +31,6 @@ public:
     virtual void invalidate() = 0;
 };
 
-enum OrderedSetType { AVL, LINKEDLIST };
+enum OrderedSetType { AVL, LINKEDLIST, REDBLACK };
 
 #endif /* INTERFACES_H */

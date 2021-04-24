@@ -17,6 +17,9 @@
 #include "base_node.h"
 #include "../util.h"
 #include <queue>        /* used in BFS */
+#include "avl_tree.h"
+#include "linkedlist.h"
+#include "redblack_tree.h"
 
 
 #define DEBUG_PRINT      0
@@ -68,6 +71,10 @@ CATree::CATree(int _numThreads, int _minKey, int _maxKey, OrderedSetType type) :
         case OrderedSetType::LINKEDLIST:
             set = new LinkedList();
             cout << "using LINKED LIST" << endl;
+            break;
+        case OrderedSetType::REDBLACK:
+            set = new RedBlackTree();
+            cout << "using REDBLACK TREE" << endl;
             break;
         default:
             assert(false);

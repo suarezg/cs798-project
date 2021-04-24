@@ -477,6 +477,7 @@ void RedBlackTree::eraseFixup(Node* node, Node * parent) {
                 sibling = currParent->right;
             }
             
+            assert(sibling != NULL);
             if ((getColor(sibling->left) == BLACK) && (getColor(sibling->right) == BLACK)) {
                 setColor(sibling, RED);
                 
@@ -511,6 +512,7 @@ void RedBlackTree::eraseFixup(Node* node, Node * parent) {
                 sibling = currParent->left;
             }
             
+            assert(sibling != NULL);
             if ((getColor(sibling->left) == BLACK) && (getColor(sibling->right) == BLACK)) {
                 setColor(sibling, RED);
                 
@@ -719,6 +721,9 @@ IOrderedSet * RedBlackTree::join(IOrderedSet * rightSet) {
         setColor(minT2, RED);
         minT2->left = NULL;
         
+        if (minT2->right != NULL) {
+            insertFixup(minT2->right);
+        }
 
         
         return this;

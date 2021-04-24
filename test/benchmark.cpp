@@ -292,6 +292,9 @@ int main(int argc, char** argv) {
     else if (!strcmp(setType, "L")) {
         runExperiment<CATree>(OrderedSetType::LINKEDLIST, keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
     }
+    else if ( !strcmp(setType, "R") ) {
+        runExperiment<CATree>(OrderedSetType::REDBLACK, keyRangeSize, millisToRun, totalThreads, insertPercent, deletePercent);
+    }
     else {
         cout<<"Bad ordered set type: "<<setType<<endl;
         return 1;
