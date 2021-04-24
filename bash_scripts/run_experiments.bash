@@ -8,14 +8,15 @@
 
 duration=$1
 trials=$2
-
+alg=$3
 
 #allThreads=(2)
 allThreads=(1 2 4 8 16)
-keyRange=(100 10000)
+#keyRange=(100 10000)
+keyRange=(10000)
 # Workload
-inPercent=(50 75 25 0)
-delPercent=(50 25 75 0)
+inPercent=(50 0)
+delPercent=(50 0)
 
 num=1
 
@@ -26,20 +27,42 @@ then
     mkdir data
 fi 
 
+if [ ! -d data/AVL ]
+then
+    mkdir data/AVL
+fi
+
+if [ ! -d data/LinkedList ]
+then
+    mkdir data/LinkedList
+fi
+
+if [ ! -d data/RedBlack ]
+then 
+    mkdir data/RedBlack
+fi
+
 
 for thread in "${allThreads[@]}" ; do
     for range in "${keyRange[@]}"; do
         for ((j=0;j<"${#inPercent[@]}";j++)); do
             for ((i=1;i<=trials;i++)); do
                 
-              
-                file_out="data/CATree_${num}.txt"
-                cmd="./benchmark -t $duration -s $range -n $thread -i ${inPercent[j]} -d ${delPercent[j]} > $file_out"
-   
+                if [ -z "$alg" ] || [ "$alg" == A ]
+                then
+                    file_out="data/AVL/CATree_AVL_$num.txt"
+                elif [ "$alg" == L ]
+                then
+                    file_out="data/LinkedList/CATree_LL_$num.txt"
+                elif [ "$alg" == R ]
+                then
+                    file_out="data/RedBlack/CATree_RB_$num.txt"
+                fi
                 
-                # delete file
+                # delete file if it already exists
                 rm -f "$file_out"
 
+                cmd="taskset -c 0-7,16-23 ./benchmark -t $duration -s $range -n $thread -i ${inPercent[j]} -d ${delPercent[j]} -o $alg > $file_out"
                 echo "Running experiment: [INS=${inPercent[j]}] [DEL=${delPercent[j]}] [KEYRANGE=$range] [THREAD=$thread] Trial $i"
                 echo "$cmd"
                 eval "$cmd"
